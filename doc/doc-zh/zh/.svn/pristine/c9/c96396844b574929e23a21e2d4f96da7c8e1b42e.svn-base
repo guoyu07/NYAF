@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Revision$ -->
+<!-- EN-Revision: 324522 Maintainer: HonestQiao Status: ready -->
+<!-- Reviewed: no Maintainer: HonestQiao -->
+<!-- CREDITS: dallas -->
+<appendix xml:id="reserved" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <title>保留字列表</title>
+ <para>
+  以下是 PHP 中预定义标识符的列表。没有列在下面的标识符可以在脚本中作为自定义标识符使用。这些列表包括关键字和预定义变量、常量和类名。这些列表可能有遗漏，它是不完整的。
+ </para>
+
+ <sect1 xml:id="reserved.keywords">
+ <title>关键词列表</title>
+  <simpara>
+   这些词语在 PHP 中有着特殊的意义。它们中有些像是函数，有些像是常量……但是它们不是的，它们只是语言结构的一部分。不能使用它们的任何一个作为常量、方法名或是类名。但是可以将它们作为变量名使用，不过这样会导致混淆。
+  </simpara>
+
+  <table>
+   <title>PHP 关键词</title>
+   <tgroup cols="5">
+    <tbody>
+     <row>
+      <entry>
+       <link linkend="language.operators.logical">and</link>
+      </entry>
+      <entry>
+       <link linkend="language.operators.logical">or</link>
+      </entry>
+      <entry>
+       <link linkend="language.operators.logical">xor</link>
+      </entry>
+      <entry>
+       <link linkend="language.constants.predefined">__FILE__</link>
+      </entry>
+      <entry>
+       <link linkend="reserved.classes.php5">exception</link> (PHP 5)
+      </entry>
+     </row>
+      <row>
+      <entry>
+       <link linkend="language.constants.predefined">__LINE__</link>
+      </entry>
+      <entry>
+       <function>array</function>
+      </entry>
+      <entry>
+       <link linkend="control-structures.foreach">as</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.break">break</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.switch">case</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="keyword.class">class</link>
+      </entry>
+      <entry>
+       <link linkend="language.oop5.constants">const</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.continue">continue</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.declare">declare</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.switch">default</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <function>die</function>
+      </entry>
+      <entry>
+       <link linkend="control-structures.do.while">do</link>
+      </entry>
+      <entry>
+       <function>echo</function>
+      </entry>
+      <entry>
+       <link linkend="control-structures.else">else</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.elseif">elseif</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <function>empty</function>
+      </entry>
+      <entry>
+       <link linkend="control-structures.declare">enddeclare</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.alternative-syntax">endfor</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.alternative-syntax">endforeach</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.alternative-syntax">endif</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="control-structures.alternative-syntax">endswitch</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.alternative-syntax">endwhile</link>
+      </entry>
+      <entry>
+       <function>eval</function>
+      </entry>
+      <entry>
+       <function>exit</function>
+      </entry>
+      <entry>
+       <link linkend="keyword.class">extends</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="control-structures.for">for</link>
+      </entry>
+      <entry>
+       &foreach;
+      </entry>
+      <entry>
+       <link linkend="functions.user-defined">function</link>
+      </entry>
+      <entry>
+       <link linkend="language.variables.scope">global</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.if">if</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <function>include</function>
+      </entry>
+      <entry>
+       <function>include_once</function>
+      </entry>
+      <entry>
+       <function>isset</function>
+      </entry>
+      <entry>
+       <function>list</function>
+      </entry>
+      <entry>
+       <link linkend="keyword.class">new</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <function>print</function>
+      </entry>
+      <entry>
+       <function>require</function>
+      </entry>
+      <entry>
+       <function>require_once</function>
+      </entry>
+      <entry>
+       <function>return</function>
+      </entry>
+      <entry>
+       <link linkend="language.variables.scope">static</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="control-structures.switch">switch</link>
+      </entry>
+      <entry>
+       <function>unset</function>
+      </entry>
+      <entry>
+       use
+      </entry>
+      <entry>
+       <link linkend="keyword.class">var</link>
+      </entry>
+      <entry>
+       <link linkend="control-structures.while">while</link>
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="language.constants.predefined">__FUNCTION__</link>
+      </entry>
+      <entry>
+       <link linkend="language.constants.predefined">__CLASS__</link>
+      </entry>
+      <entry>
+       <link linkend="language.constants.predefined">__METHOD__</link>
+      </entry>
+      <entry>
+       <link linkend="language.oop5.final">final</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="reserved.classes.php5">php_user_filter</link> (PHP 5)
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="language.oop5.interfaces">interface</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.oop5.interfaces">implements</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.oop5.basic">extends</link>
+      </entry>
+      <entry>
+       <link linkend="language.oop5.visibility">public</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.oop5.visibility">private</link> (PHP 5)
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="language.oop5.visibility">protected</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.oop5.abstract">abstract</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.oop5.cloning">clone</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.exceptions">try</link> (PHP 5)
+      </entry>
+      <entry>
+       <link linkend="language.exceptions">catch</link> (PHP 5)
+      </entry>
+     </row>
+     <row>
+      <entry>
+       <link linkend="language.exceptions">throw</link> (PHP 5)
+      </entry>
+      <entry>
+       cfunction (PHP 4 only)
+      </entry>      
+      <entry>
+       <link linkend="keyword.class">this</link> (PHP 5 only)
+      </entry>
+      <entry>
+      </entry>
+     </row>
+    </tbody>
+   </tgroup>
+  </table>
+ </sect1>
+
+ <sect1 xml:id="reserved.classes">
+  <title>预定义类</title>
+  <para>
+   本节列出标准的预定义类。各种扩展库定义了其它类，其说明在各自的参考文档中。
+  </para>
+
+  <sect2 xml:id="reserved.classes.standard">
+   <title>标准类</title>
+
+   <simpara>
+    这些类由一些内建在 PHP 中的标准函数定义。
+   </simpara>
+
+   <variablelist>
+    <varlistentry>
+     <term><classname>Directory</classname></term>
+     <listitem>
+      <simpara>
+        由<function>dir</function>创建.
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><classname>stdClass</classname></term>
+     <listitem>
+      <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><classname>__PHP_Incomplete_Class</classname></term>
+     <listitem>
+      <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </sect2>
+
+  <sect2 xml:id="reserved.classes.php5">
+   <title>自 PHP 5 起预定义的类</title>
+
+   <simpara>
+    这些额外的预定义类是 PHP 5.0.0 引进的。
+   </simpara>
+
+   <variablelist>
+    <varlistentry>
+     <term><classname>exception</classname></term>
+     <listitem>
+      <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><classname>php_user_filter</classname></term>
+     <listitem>
+      <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </sect2>
+
+  <sect2 xml:id="reserved.classes.closure">
+   <title>Closure</title>
+
+   <simpara>
+    PHP5.3.0中引入了一个预定义的final类<classname>Closure</classname>，它可以用于实现
+    <link linkend="functions.anonymous">匿名函数</link>
+   </simpara>
+   <simpara>
+    该类的构造方法禁止手工创建该类的对象（会导致一个<constant>E_RECOVERABLE_ERROR</constant>错误）。该类也有一个<literal>__invoke</literal>
+    方法来进行<link linkend="language.oop5.magic.invoke">魔术调用</link>。
+   </simpara>
+
+  </sect2>
+
+
+  <sect2 xml:id="reserved.classes.special">
+   <title>特殊的类</title>
+
+   <simpara>
+    以下标记符不可以作为类名，因为它们有着特殊的用途。
+   </simpara>
+
+   <variablelist>
+    <varlistentry>
+     <term><classname>self</classname></term>
+     <listitem>
+      <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+    <varlistentry>
+     <term><classname>parent</classname></term>
+     <listitem>
+     <simpara>
+      </simpara>
+     </listitem>
+    </varlistentry>
+   </variablelist>
+  </sect2>
+
+ </sect1>
+
+ &appendices.reserved.constants;
+
+</appendix>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:1
+sgml-indent-data:t
+indent-tabs-mode:nil
+sgml-parent-document:nil
+sgml-default-dtd-file:"~/.phpdoc/manual.ced"
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+vim600: syn=xml fen fdm=syntax fdl=2 si
+vim: et tw=78 syn=sgml
+vi: ts=1 sw=1
+-->

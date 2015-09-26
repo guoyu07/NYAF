@@ -1,0 +1,6 @@
+&reference.pthreads.pool.collect;
+&reference.pthreads.pool.construct;
+&reference.pthreads.pool.resize;
+&reference.pthreads.pool.shutdown;
+&reference.pthreads.pool.submit;
+&reference.pthreads.pool.submitTo;

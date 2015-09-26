@@ -1,0 +1,2 @@
+&reference.mongodb.bson.timestamp.construct;
+&reference.mongodb.bson.timestamp.tostring;

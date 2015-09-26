@@ -1,0 +1,3 @@
+&reference.sync.syncsemaphore.construct;
+&reference.sync.syncsemaphore.lock;
+&reference.sync.syncsemaphore.unlock;

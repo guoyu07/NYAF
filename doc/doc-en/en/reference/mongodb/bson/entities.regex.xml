@@ -1,0 +1,4 @@
+&reference.mongodb.bson.regex.construct;
+&reference.mongodb.bson.regex.getflags;
+&reference.mongodb.bson.regex.getpattern;
+&reference.mongodb.bson.regex.tostring;

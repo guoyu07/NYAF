@@ -1,0 +1,12 @@
+&reference.mongodb.bson.binary;
+&reference.mongodb.bson.javascript;
+&reference.mongodb.bson.maxkey;
+&reference.mongodb.bson.minkey;
+&reference.mongodb.bson.objectid;
+&reference.mongodb.bson.persistable;
+&reference.mongodb.bson.regex;
+&reference.mongodb.bson.serializable;
+&reference.mongodb.bson.timestamp;
+&reference.mongodb.bson.type;
+&reference.mongodb.bson.unserializable;
+&reference.mongodb.bson.utcdatetime;

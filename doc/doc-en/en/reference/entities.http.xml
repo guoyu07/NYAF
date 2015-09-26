@@ -1,0 +1,16 @@
+&reference.http.HttpDeflateStream;
+&reference.http.HttpInflateStream;
+&reference.http.HttpMessage;
+&reference.http.HttpQueryString;
+&reference.http.HttpRequest;
+&reference.http.HttpRequestPool;
+&reference.http.HttpResponse;
+&reference.http.book;
+&reference.http.configuration;
+&reference.http.constants;
+&reference.http.install;
+&reference.http.reference;
+&reference.http.request-options;
+&reference.http.resources;
+&reference.http.setup;
+&reference.http.versions;

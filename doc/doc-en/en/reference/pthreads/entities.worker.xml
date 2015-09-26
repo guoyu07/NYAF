@@ -1,0 +1,6 @@
+&reference.pthreads.worker.getstacked;
+&reference.pthreads.worker.isshutdown;
+&reference.pthreads.worker.isworking;
+&reference.pthreads.worker.shutdown;
+&reference.pthreads.worker.stack;
+&reference.pthreads.worker.unstack;

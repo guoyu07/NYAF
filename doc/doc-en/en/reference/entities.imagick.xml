@@ -1,0 +1,12 @@
+&reference.imagick.book;
+&reference.imagick.constants;
+&reference.imagick.examples;
+&reference.imagick.imagick;
+&reference.imagick.imagickdraw;
+&reference.imagick.imagickkernel;
+&reference.imagick.imagickkernelexception;
+&reference.imagick.imagickpixel;
+&reference.imagick.imagickpixeliterator;
+&reference.imagick.ini;
+&reference.imagick.setup;
+&reference.imagick.versions;

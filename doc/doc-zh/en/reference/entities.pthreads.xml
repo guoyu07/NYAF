@@ -1,0 +1,14 @@
+&reference.pthreads.book;
+&reference.pthreads.collectable;
+&reference.pthreads.cond;
+&reference.pthreads.configure;
+&reference.pthreads.constants;
+&reference.pthreads.modifiers;
+&reference.pthreads.mutex;
+&reference.pthreads.pool;
+&reference.pthreads.reference;
+&reference.pthreads.setup;
+&reference.pthreads.thread;
+&reference.pthreads.threaded;
+&reference.pthreads.versions;
+&reference.pthreads.worker;

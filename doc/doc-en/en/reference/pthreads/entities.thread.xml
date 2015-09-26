@@ -1,0 +1,11 @@
+&reference.pthreads.thread.detach;
+&reference.pthreads.thread.getcreatorid;
+&reference.pthreads.thread.getcurrentthread;
+&reference.pthreads.thread.getcurrentthreadid;
+&reference.pthreads.thread.getthreadid;
+&reference.pthreads.thread.globally;
+&reference.pthreads.thread.isjoined;
+&reference.pthreads.thread.isstarted;
+&reference.pthreads.thread.join;
+&reference.pthreads.thread.kill;
+&reference.pthreads.thread.start;
