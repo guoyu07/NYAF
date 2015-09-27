@@ -6,7 +6,7 @@
 *.fls
 *.out
 *.toc
-
+/doc/yaf-src
 ## Intermediate documents:
 *.dvi
 *-converted-to.*
