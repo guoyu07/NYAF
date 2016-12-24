@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 doc/yaf-src
 doc/yaf-src/.git
 
+=======
+# ---> TeX
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
@@ -9,10 +13,13 @@ doc/yaf-src/.git
 *.fls
 *.out
 *.toc
+<<<<<<< HEAD
 /doc/yaf-src
 doc/yaf-src/*
 doc/yaf-src
 ./doc/yaf-src
+=======
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 
 ## Intermediate documents:
 *.dvi
@@ -40,6 +47,10 @@ doc/yaf-src
 
 ## Auxiliary and intermediate files from other packages:
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 # algorithms
 *.alg
 *.loa
@@ -100,7 +111,12 @@ acs-*.bib
 # minitoc
 *.maf
 *.mtc
+<<<<<<< HEAD
 *.mtc0
+=======
+*.mtc[0-9]
+*.mtc[1-9][0-9]
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 
 # minted
 _minted*
@@ -109,6 +125,12 @@ _minted*
 # morewrites
 *.mw
 
+<<<<<<< HEAD
+=======
+# mylatexformat
+*.fmt
+
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 # nomencl
 *.nlo
 
@@ -122,6 +144,14 @@ _minted*
 *.sympy
 sympy-plots-for-*.tex/
 
+<<<<<<< HEAD
+=======
+# TikZ & PGF
+*.dpth
+*.md5
+*.auxlock
+
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
 # todonotes
 *.tdo
 
@@ -131,3 +161,7 @@ sympy-plots-for-*.tex/
 # WinEdt
 *.bak
 *.sav
+<<<<<<< HEAD
+=======
+
+>>>>>>> bfcca45167b0f63c0b7e96e2fdd90949cefcf954
