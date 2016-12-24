@@ -1,0 +1,12 @@
+&reference.ktaglib.audioproperties;
+&reference.ktaglib.book;
+&reference.ktaglib.configure;
+&reference.ktaglib.constants;
+&reference.ktaglib.examples;
+&reference.ktaglib.id3v2attachedpictureframe;
+&reference.ktaglib.id3v2frame;
+&reference.ktaglib.id3v2tag;
+&reference.ktaglib.mpegfile;
+&reference.ktaglib.setup;
+&reference.ktaglib.tag;
+&reference.ktaglib.versions;

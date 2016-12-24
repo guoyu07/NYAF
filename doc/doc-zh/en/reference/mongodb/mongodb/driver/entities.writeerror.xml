@@ -1,0 +1,3 @@
+&reference.mongodb.mongodb.driver.writeerror.getcode;
+&reference.mongodb.mongodb.driver.writeerror.getindex;
+&reference.mongodb.mongodb.driver.writeerror.getmessage;

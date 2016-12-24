@@ -1,0 +1,9 @@
+&reference.pdo-pgsql.PDO.pgsqlCopyFromArray;
+&reference.pdo-pgsql.PDO.pgsqlCopyFromFile;
+&reference.pdo-pgsql.PDO.pgsqlCopyToArray;
+&reference.pdo-pgsql.PDO.pgsqlCopyToFile;
+&reference.pdo-pgsql.PDO.pgsqlGetNotify;
+&reference.pdo-pgsql.PDO.pgsqlGetPid;
+&reference.pdo-pgsql.PDO.pgsqlLOBCreate;
+&reference.pdo-pgsql.PDO.pgsqlLOBOpen;
+&reference.pdo-pgsql.PDO.pgsqlLOBUnlink;

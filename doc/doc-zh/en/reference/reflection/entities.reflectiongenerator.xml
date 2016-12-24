@@ -1,0 +1,7 @@
+&reference.reflection.reflectiongenerator.construct;
+&reference.reflection.reflectiongenerator.getexecutingfile;
+&reference.reflection.reflectiongenerator.getexecutinggenerator;
+&reference.reflection.reflectiongenerator.getexecutingline;
+&reference.reflection.reflectiongenerator.getfunction;
+&reference.reflection.reflectiongenerator.getthis;
+&reference.reflection.reflectiongenerator.gettrace;

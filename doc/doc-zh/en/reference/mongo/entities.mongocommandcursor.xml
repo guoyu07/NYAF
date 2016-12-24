@@ -1,0 +1,13 @@
+&reference.mongo.mongocommandcursor.batchsize;
+&reference.mongo.mongocommandcursor.construct;
+&reference.mongo.mongocommandcursor.createfromdocument;
+&reference.mongo.mongocommandcursor.current;
+&reference.mongo.mongocommandcursor.dead;
+&reference.mongo.mongocommandcursor.getreadpreference;
+&reference.mongo.mongocommandcursor.info;
+&reference.mongo.mongocommandcursor.key;
+&reference.mongo.mongocommandcursor.next;
+&reference.mongo.mongocommandcursor.rewind;
+&reference.mongo.mongocommandcursor.setreadpreference;
+&reference.mongo.mongocommandcursor.timeout;
+&reference.mongo.mongocommandcursor.valid;

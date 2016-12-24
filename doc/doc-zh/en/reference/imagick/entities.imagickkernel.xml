@@ -1,0 +1,7 @@
+&reference.imagick.imagickkernel.addkernel;
+&reference.imagick.imagickkernel.addunitykernel;
+&reference.imagick.imagickkernel.frombuiltin;
+&reference.imagick.imagickkernel.frommatrix;
+&reference.imagick.imagickkernel.getmatrix;
+&reference.imagick.imagickkernel.scale;
+&reference.imagick.imagickkernel.separate;

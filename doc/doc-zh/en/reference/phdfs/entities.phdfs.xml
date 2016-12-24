@@ -1,0 +1,14 @@
+&reference.phdfs.phdfs.connect;
+&reference.phdfs.phdfs.construct;
+&reference.phdfs.phdfs.copy;
+&reference.phdfs.phdfs.create-directory;
+&reference.phdfs.phdfs.delete;
+&reference.phdfs.phdfs.destruct;
+&reference.phdfs.phdfs.disconnect;
+&reference.phdfs.phdfs.exists;
+&reference.phdfs.phdfs.file-info;
+&reference.phdfs.phdfs.list-directory;
+&reference.phdfs.phdfs.read;
+&reference.phdfs.phdfs.rename;
+&reference.phdfs.phdfs.tell;
+&reference.phdfs.phdfs.write;

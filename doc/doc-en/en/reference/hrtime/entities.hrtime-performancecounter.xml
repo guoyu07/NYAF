@@ -1,0 +1,6 @@
+&reference.hrtime.hrtime-performancecounter.getelapsedticks;
+&reference.hrtime.hrtime-performancecounter.getfrequency;
+&reference.hrtime.hrtime-performancecounter.getlastelapsedticks;
+&reference.hrtime.hrtime-performancecounter.isrunning;
+&reference.hrtime.hrtime-performancecounter.start;
+&reference.hrtime.hrtime-performancecounter.stop;

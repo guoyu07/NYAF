@@ -1,0 +1,7 @@
+&reference.mongo.context.log-cmd-delete;
+&reference.mongo.context.log-cmd-insert;
+&reference.mongo.context.log-cmd-update;
+&reference.mongo.context.log-getmore;
+&reference.mongo.context.log-killcursor;
+&reference.mongo.context.log-reply;
+&reference.mongo.context.log-write-batch;

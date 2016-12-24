@@ -1,0 +1,4 @@
+&reference.mongodb.functions.bson.fromarray;
+&reference.mongodb.functions.bson.fromjson;
+&reference.mongodb.functions.bson.toarray;
+&reference.mongodb.functions.bson.tojson;

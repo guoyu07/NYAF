@@ -1,0 +1,9 @@
+&reference.mongodb.mongodb.driver.manager.construct;
+&reference.mongodb.mongodb.driver.manager.executebulkwrite;
+&reference.mongodb.mongodb.driver.manager.executecommand;
+&reference.mongodb.mongodb.driver.manager.executedelete;
+&reference.mongodb.mongodb.driver.manager.executeinsert;
+&reference.mongodb.mongodb.driver.manager.executequery;
+&reference.mongodb.mongodb.driver.manager.executeupdate;
+&reference.mongodb.mongodb.driver.manager.getservers;
+&reference.mongodb.mongodb.driver.manager.selectserver;

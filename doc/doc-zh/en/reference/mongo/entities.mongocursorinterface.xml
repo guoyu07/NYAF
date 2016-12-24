@@ -1,0 +1,6 @@
+&reference.mongo.mongocursorinterface.batchsize;
+&reference.mongo.mongocursorinterface.dead;
+&reference.mongo.mongocursorinterface.getreadpreference;
+&reference.mongo.mongocursorinterface.info;
+&reference.mongo.mongocursorinterface.setreadpreference;
+&reference.mongo.mongocursorinterface.timeout;

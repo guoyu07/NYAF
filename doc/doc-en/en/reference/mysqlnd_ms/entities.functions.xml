@@ -1,0 +1,14 @@
+&reference.mysqlnd-ms.functions.mysqlnd-ms-dump-servers;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-fabric-select-global;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-fabric-select-shard;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-get-last-gtid;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-get-last-used-connection;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-get-stats;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-match-wild;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-query-is-select;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-set-qos;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-set-user-pick-server;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-xa-begin;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-xa-commit;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-xa-gc;
+&reference.mysqlnd-ms.functions.mysqlnd-ms-xa-rollback;

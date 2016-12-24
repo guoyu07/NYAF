@@ -1,0 +1,17 @@
+&reference.pthreads.threaded.chunk;
+&reference.pthreads.threaded.count;
+&reference.pthreads.threaded.extend;
+&reference.pthreads.threaded.from;
+&reference.pthreads.threaded.getterminationinfo;
+&reference.pthreads.threaded.isrunning;
+&reference.pthreads.threaded.isterminated;
+&reference.pthreads.threaded.iswaiting;
+&reference.pthreads.threaded.lock;
+&reference.pthreads.threaded.merge;
+&reference.pthreads.threaded.notify;
+&reference.pthreads.threaded.pop;
+&reference.pthreads.threaded.run;
+&reference.pthreads.threaded.shift;
+&reference.pthreads.threaded.synchronized;
+&reference.pthreads.threaded.unlock;
+&reference.pthreads.threaded.wait;
