@@ -1,0 +1,225 @@
+\part{Yaf}
+
+
+\chapter{Overview}
+
+Yaf（Yet Another Framework）扩展是一个用来开发web应用的php框架，构建Yaf扩展不需要其他扩展，而且Yaf并未与PHP进行捆绑，需要开发者自己单独安装。
+
+
+\section{Directory}
+
+
+一个典型的Yaf应用程序的目录结构如下：
+
+\begin{lstlisting}[language=bash]
+|— index.php
+|— .htaccess
+|— conf
+|       `— application.ini // application config
+|— application
+|       |— Bootstrap.php
+|       |— controllers
+|       |       |— Index.php // default controller
+|       |— views
+|       |       |— index.phtml // view template for default action
+|       `— modules
+|— library
+|— models
+|— plugins       
+\end{lstlisting}
+
+\section{Intry Script}
+
+
+Yaf应用程序根目录下的index.php是整个Yaf应用程序唯一的入口，应该把所有请求都重定向到这个文件（在Apache+php\_mod模式下可以使用.htaccess）。
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+define("APPLICATION_PATH",dirname(__FILE__));
+
+$app = new Yaf_Application(APPLICATION_PATH . "/conf/application.ini");
+$app->bootstrap() // call bootstrap methods defined in Bootstrap.php
+     ->run();
+?>
+\end{lstlisting}
+
+\section{Rewrite Rule}
+
+
+Yaf使用的URL重写规则如下：
+
+
+\begin{lstlisting}[language=bash]
+# apache(.htaccess)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule .* index.php
+
+# for nginx
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   if ( !-e $request_filename ) {
+      rewrite ^/(.*) /index.php/$1 last;
+   }
+}
+
+# for lighttpd
+$HTTP["host"] =~ "(www.)?domain.com$" {
+   url.rewrite = (
+       "^/(.+)/?$" => "/index.php/$1",
+   )
+}
+\end{lstlisting}
+
+另外，在LNMP架构中使用Nginx和PHP-FPM时，可以使用如下的URL重写配置：
+
+\begin{lstlisting}[language=bash]
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   location / {
+      try_files $uri $uri/ /index.php$is_args$args;
+   }
+   
+   location ~ \.php$ {
+       fastcgi_pass 127.0.0.1:9000;
+       #fastcgi_pass unix:/tmp/php-cgi.sock;
+       fastcgi_index index.php;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       include fastcgi_params;  
+   }
+}
+\end{lstlisting}
+
+
+\subsection{PATH\_INFO}
+
+在使用Nginx作为单一入口的PHP框架的反向代理时，需要使用Nginx向Yaf/ThinkPHP等应用程序传递PATH\_INFO请求参数才能正常运行，例如：
+
+
+\begin{lstlisting}[language=bash]
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   location / {
+      try_files $uri $uri/ @path_rw;
+   }
+   
+   location @path_rw {
+      rewrite ^/(.*)$ /index.php/$1 last;
+   }
+   
+   location ~ \.php {
+       fastcgi_pass 127.0.0.1:9000;
+       #fastcgi_pass unix:/tmp/php-cgi.sock;
+       fastcgi_index index.php;
+       include fastcgi.conf;
+       
+       fastcgi_split_path_info ^(.+?\.php)(/.+)$;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+       fastcgi_param PATH_INFO $fastcgi_path_info;
+       #include fastcgi_params;  
+   }
+}
+\end{lstlisting}
+
+\section{Configuration}
+
+
+
+Yaf默认的应用配置文件application.ini的内容如下：
+
+\begin{lstlisting}[language=bash]
+[yaf]
+;APPLICATION_PATH is the constant defined in index.php
+application.directory = APPLICATION_PATH "/application"
+
+;product section inherit from yaf section
+[product:yaf]
+foo=bar
+\end{lstlisting}
+
+Yaf默认的Bootstrap.php的内容如下：
+
+\begin{lstlisting}[language=PHP]
+<?php
+/* Bootstrap class should be define under ./application/Boostrap.php */
+class Boostrap extends Yaf_Bootstrap_Abstract {
+   public function _initConfig(Yaf_Dispatcher $dispatcher) {
+      var_dump(__METHOD__);
+   }
+   
+   public function _initPlugin(Yaf_Dispatcher $dispatcher) {
+      var_dump(__MATHOD__);
+   }
+}
+\end{lstlisting}
+
+
+\section{Controller}
+
+
+Yaf默认的控制器为controllers/Index.php，其内容如下：
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    /* default action */
+    public function indexAction() {
+        $this->_view->word = "hello world, yaf";
+        // or
+        // $this->getView()->word = "hello world, yaf";
+    }
+}
+\end{lstlisting}
+
+
+\section{View}
+
+
+Yaf默认的视图文件为views/index.phtml，其内容如下：
+
+\begin{lstlisting}[language=HTML]
+<html>
+  <head>
+    <title>Hello world</title>
+  </head>
+  <body>
+     <?php echo $word; ?>
+  </body>
+</html>
+\end{lstlisting}
+
+运行上述的Yaf示例应用程序的输出类似于：
+
+
+\begin{lstlisting}[language=bash]
+<html>
+  <head>
+    <title>Hello world</title>
+  </head>
+  <body>
+     hello world, yaf
+  </body>
+</html>
+\end{lstlisting}
+
+
+
+
+\begin{lstlisting}[language=bash]
+
+\end{lstlisting}
