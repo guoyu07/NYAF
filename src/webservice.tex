@@ -1,0 +1,415 @@
+\part{Web Service}
+
+
+\chapter{Overview}
+
+
+Web服务（Web Service）是一种服务导向架构的技术，通过标准的Web协议提供服务，目的是保证不同平台的应用服务可以互操作。
+
+根据W3C的定义，Web服务（Web service）应当是一个软件系统，用以支持网络间不同机器的互动操作。网络服务通常是许多API所组成的，它们通过网络（例如Internet的远程服务器端）来执行客户所提交服务的请求。
+
+
+
+
+
+
+无论定义还是实现，Web服务过程中都会由服务器提供一个机器可读的描述（通常基于WSDL）以辨识服务器所提供的Web服务。
+
+虽然WSDL不是SOAP服务端点的必要条件，但是目前基于Java的主流Web服务开发框架往往都需要WSDL实现客户端的源代码生成，而且WS-I则在Web服务定义中强制包含SOAP和WSDL。
+
+尽管W3C的定义涵盖诸多相异且无法介分的系统，不过通常的Web服务指的是主从式架构（Client-server）之间根据SOAP协议传递XML格式消息。
+
+作为网络和语义网构建者，W3C逐渐把精力放在核心网络本身，不再为Web服务改换版本，后来由OASIS对Web服务扩展实施相应的标准化工作，包括Web服务资源框架以及WSDM。
+
+WEB服务实际上是一组工具，并有多种不同的方法进行调用，其中三种最普遍的手段分别是远程过程调用（RPC），服务导向架构（SOA）以及表述性状态转移（REST）。
+
+Web服务普遍使用XML作为消息格式，并以SOAP封装，由HTTP传输，因此WEB服务始终处于较高的性能开销状态，因此一些新兴技术正在试图解决这一问题，例如新的XML处理模型致力于解决XML的性能瓶颈。
+
+在Web服务发展的同时，RMI作为和Web服务同类的中间件系统得到了广泛的部署，CORBA和DCOM两者都尝试将作用域扩展到分布式对象，而且这一点也被Web服务所模仿，不过RMI、CORBA和DCOM这些类似的技术往往借助于XML-RPC和HTTP本身，并不依靠SOAP封装参数。
+
+
+\section{RPC}
+
+
+Web服务提供一个分布式函数或方法接口供用户调用，这是一种比较传统的方式。
+
+通常情况下，在WSDL中对RPC接口进行定义（类似于早期的XML-RPC）。
+
+
+RPC（Remote Procedure Call，远程过程调用）是一个允许运行于一台计算机的程序调用另一台计算机的子程序的计算机通信协议，开发者无需额外地为这个交互作用编程。如果涉及的软件采用面向对象编程，那么RPC也可以称作远程调用或远程方法调用（例如Java RMI）。
+
+RPC首次在UNIX平台上普及的执行工具程序是SUN公司的RPC（现在的ONC RPC），也是SUN NFC的主要部件，而且仍然在服务器上被广泛使用。
+
+另一个早期UNIX平台的RPC工具是NCS（“阿波罗”计算机网络计算系统），并且NCS已经是OSF的分布计算环境（DCE）中的DCE/RPC的基础，并补充了DCOM。
+
+RPC是一个简单而又广受欢迎的分布式计算的客户端-服务器（Client/Server）的例子，RPC总是由客户端对服务器发出一个执行若干过程请求，并用客户端提供的参数，执行结果将返回给客户端。
+
+RPC的各式各样的变体（例如XML-RPC和JSON-RPC）和细节差异对应地派生了不同的RPC协议，而且它们之间无法兼容，因此许多标准化的 RPC 系统应运而生，并且大部分采用接口描述语言（Interface Description Language，IDL）来方便跨平台的远程过程调用，从而允许不同的客户端都可以访问服务器。
+
+
+尽管最初的Web服务广泛采用RPC方式部署，但是针对其过于紧密的耦合性带来了开发者的批评。
+
+这是因为RPC式WEB服务实质上是利用一个简单的映射来把用户请求直接转化成为一个特定语言编写的函数或方法，所以多数Web服务提供商认为这种方式在未来将难有作为。
+
+
+
+在Web服务提供商的推动下，WS-I基本协议集（WS-I Basic Profile）已经不再支持远程过程调用。
+
+
+\subsection{XML-RPC}
+
+XML-RPC（“XML编码”变体）是一个RPC的分布式计算协议，通过XML将调用函数封装，并使用HTTP协议作为传送机制，并演变为现在的SOAP协议。
+
+XML-RPC通过向支持这个协议的服务器发出HTTP请求，发出请求的用户端一般都是需要向远端系统要求调用的客户端软件。
+
+
+以下为一个XML-RPC请求的示例：
+
+\begin{lstlisting}[language=XML]
+<?xml version="1.0"?>
+<methodCall>
+  <methodName>examples.getStateName</methodName>
+  <params>
+    <param>
+        <value><i4>40</i4></value>
+    </param>
+  </params>
+</methodCall>
+\end{lstlisting}
+
+相对于上述请求，以下为一个回应的示例：
+
+\begin{lstlisting}[language=XML]
+<?xml version="1.0"?>
+<methodResponse>
+  <params>
+    <param>
+        <value><string>South Dakota</string></value>
+    </param>
+  </params>
+</methodResponse>
+\end{lstlisting}
+
+以下为一个 XML-RPC错误的示例：
+
+\begin{lstlisting}[language=XML]
+<?xml version="1.0"?>
+<methodResponse>
+  <fault>
+    <value>
+      <struct>
+        <member>
+          <name>faultCode</name>
+          <value><int>4</int></value>
+        </member>
+        <member>
+          <name>faultString</name>
+          <value><string>Too many parameters.</string></value>
+        </member>
+      </struct>
+    </value>
+  </fault>
+</methodResponse>
+\end{lstlisting}
+
+
+\subsection{JSON-RPC}
+
+JSON-RPC（“JSON编码”变体）和XML-RPC类似，本身是一种使用JSON编码的RPC协议。
+
+JSON-RPC允许通知（数据发送到不需要响应的服务器），并且多个调用发送到服务器时可以无序响应。
+
+JSON-RPC通过向实现JSON-RPC协议的服务器发送请求来工作，客户端通常是需要调用远程系统的单个方法的软件，多个输入参数可以作为数组或对象传递到远程方法，而且方法本身也可以返回多个输出数据，具体取决于实现的JSON-RPC协议版本。
+
+所有传输类型都是使用使用JSON序列化的单个对象，其中请求是对由远程系统提供的特定方法的调用，而且必须包含三个特定属性：
+
+\begin{compactitem}
+\item method - 需要调用的方法名
+
+
+\item params - 发送到指定方法的对象或数组
+
+
+\item id - 用于将响应与请求相匹配的任何类型的值。
+
+\end{compactitem}
+
+请求的接收者必须用对所有接收到的请求的有效响应来回复。 响应必须包含下面提到的属性：
+
+\begin{compactitem}
+\item result - 调用方法返回的数据。 如果在调用方法时发生错误，则此值必须为null。
+
+\item error - 如果调用方法时出现错误，则指定错误代码，否则为null。
+
+
+\item id - 正在响应的请求的ID。
+
+\end{compactitem}
+
+有些情况下不需要响应，因此引入了通知。 通知类似于请求，不过ID不是必需的，因为不会返回任何响应。在这种情况下，应省略id属性（版本2.0）或null（版本1.0）。
+
+在下面的示例中， \texttt{-\/->}表示发送到服务（请求）的数据，\texttt{<-\/-}表示来自服务的数据，虽然\texttt{<-\/-}通常在客户端 - 服务器计算中称为响应，不过它不一定意味着对请求的回答，取决于JSON-RPC版本。
+
+\begin{example}
+JSON-RPC 2.0请求和响应
+\begin{lstlisting}[language=XML]
+--> {"jsonrpc": "2.0", "method": "subtract", "params": {"minuend": 42, "subtrahend": 23}, "id": 3}
+<-- {"jsonrpc": "2.0", "result": 19, "id": 3}
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+JSON-RPC 2.0通知（无需响应）
+\begin{lstlisting}[language=XML]
+--> {"jsonrpc": "2.0", "method": "update", "params": [1,2,3,4,5]}
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+JSON-RPC 1.1请求和响应
+\begin{lstlisting}[language=XML]
+--> {"version": "1.1", "method": "confirmFruitPurchase", "params": [["apple", "orange", "mangoes"], 1.123], "id": "194521489"}
+<-- {"version": "1.1", "result": "done", "error": null, "id": "194521489"}
+\end{lstlisting}
+\end{example}
+
+
+\begin{example}
+JSON-RPC 1.0请求和响应
+\begin{lstlisting}[language=JavaScript]
+--> {"method": "echo", "params": ["Hello JSON-RPC"], "id": 1}
+<-- {"result": "Hello JSON-RPC", "error": null, "id": 1}
+\end{lstlisting}
+\end{example}
+
+
+\section{SOA}
+
+在业界比较关注的遵从服务导向架构（Service-oriented architecture，SOA）概念来构筑WEB服务中，通讯由消息驱动，而不再是某个动作（方法调用），这种Web服务也被称作面向消息的服务。
+
+
+SOA式Web服务得到了大部分主要软件供应商以及业界专家的支持和肯定。作为与RPC方式的最大差别，SOA方式更加关注如何去连接服务而不是去特定某个实现的细节，而且WSDL定义了联络服务的必要内容。
+
+作为一种构造分布式计算的应用程序的方法，SOA将应用程序功能作为服务发送给最终用户或者其他服务，而且SOA采用开放标准、与软件资源进行交互并采用表示的标准方式。
+
+SOA通常被定义为通过Web服务协议栈暴露的服务,，与SOA相关的Web服务的标准如下所示：
+
+\begin{compactitem}
+\item XML - 用于以文档格式描述消息中的数据的标记语言
+\item HTTP(S) - 客户端和服务端之间用于传送信息而发送请求/响应的协议
+\item SOAP - 在计算机HTTP网络上交换基于XML的消息的协议
+\item WSDL - 用于描述与服务交互所需的服务的公共接口、协议绑定和消息格式的基于XML的描述语言
+\item UDDI - 用于发布WSDL并允许第三方发现这些服务的基于XML的注册协议。
+\end{compactitem}
+
+实际上，一个系统要成为服务导向的系统并不需要这些协议，例如一些服务导向的系统可以通过CORBA实现。
+
+SOA能够帮助业务迅速和高效地响应变化的市场条件，SOA的架构在宏观（服务）上而不是在微观上（对象）提高了重复使用性，而且SOA的架构可以简化与传统系统的互连和使用。
+
+在某种意义上说，SOA可以被认为是一种演化，而不是革命。例如，SOA捕捉到了之前体系架构的许多最佳实践或实际应用。
+
+在通信系统中，近年来进展有限的解决方案大多采用完全静态的绑定来与网络中的其他设备沟通，但是如果正式采用SOA方式，解决方案就更能妥善定位，进而突显定义明确且可高度跨平台操作界面的重要性。
+
+SOA提升了将用户从服务实现分开的目标，服务可以运行在不同的服务器上，并通过网络被访问，从而大大增加了服务的重用。
+
+以下指导原则是开发，维护和使用SOA的基本原则：
+
+\begin{compactitem}
+\item 可重复使用, 粒度, 模组性, 可组合型, 物件化原件, 构件化以及具交互操作性
+\item 符合开放标准(通用的或行业的)
+\item 服务的识别和分类，提供和发布，监控和跟踪。
+\end{compactitem}
+
+下面是一些特定的SOA体系架构原则：
+
+\begin{compactitem}
+\item 服务封装
+\item 服务松耦合(Loosely coupled) - 服务之间的关系最小化，只是互相知道。
+\item 服务契约 - 服务按照服务描述文档所定义的服务契约行事。
+\item 服务抽象 - 除了服务契约中所描述的内容，服务将对外部隐藏逻辑。
+\item 服务的重用性 - 将逻辑分布在不同的服务中，以提高服务的重用性。
+\item 服务的可组合性 - 一组服务可以协调工作并组合起来形成一个组合服务。
+\item 服务自治 – 服务对所封装的逻辑具有控制权
+\item 服务无状态 – 服务将一个活动所需保存的资讯最小化。
+\item 服务的可被发现性 – 服务需要对外部提供描述资讯，这样可以通过现有的发现机制发现并访问这些服务。
+\end{compactitem}
+
+除此以外，在定义一个SOA实现时，还需要考虑以下因素：
+
+\begin{compactitem}
+\item 生命周期管理
+\item 有效使用系统资源
+\item 服务成熟度和性能
+\end{compactitem}
+
+
+
+
+
+\section{REST}
+
+
+表述性状态转移式（Representational state transfer，REST）WEB服务类似于HTTP或其他类似协议，它们把接口限定在一组广为人知的标准动作中（比如HTTP的GET、PUT、DELETE）以供调用。此类WEB服务关注与那些稳定的资源的互动，而不是消息或动作。
+
+
+REST Web服务可以通过WSDL来描述SOAP消息内容，通过HTTP限定动作接口，或者完全在SOAP中对动作进行抽象。
+
+
+虽然REST Web服务过于复杂而且过于偏重大型软件开发商，不过相关的开发工具（例如Visual Studio或Eclipse）已经具备自动化产生具象物件来减少Web服务的调用难度，这样开发者只需要专注于调用与实现。
+
+
+
+\chapter{Kernel Definition}
+
+
+考虑到并没有某个独立文档包含Web服务的一切相关内容，只能采用模块化的方式给出对WEB服务的描述，但是仍然无法给出一个“绝对全面和准确”的定义。
+
+另外，受到外部环境和实现技术的影响，各方给出的核心定义还可能稍有出入，不过Web服务通常包括：
+
+\begin{compactitem}
+\item SOAP - 一个基于XML的可扩展消息信封（envelope）格式，需要同时绑定一个网络传输协议（通常是HTTP、HTTPS、SMTP或XMPP）。
+
+\item WSDL - 一个XML格式文档，用以描述服务端口访问方式和使用协议的细节。通常用来辅助生成服务器和客户端代码及配置信息。
+
+\item UDDI - 一个用来发布和搜索WEB服务的协议，应用程序可以通过UDDI协议在设计或运行时找到目标Web服务。
+
+\end{compactitem}
+
+\section{SOAP}
+
+SOAP（Simple Object Access Protocol，即简单对象访问协议）是一种用于在Web服务中交换结构化数据的协议规范。
+
+SOAP最初只是被设计用来作为一种对象访问协议，现在SOAP可以使用因特网应用层协议（例如HTTP、HTTPS和SMTP等）作为其传输协议。
+
+SMTP以及HTTP协议都可以用来传输SOAP消息，而且HTTP协议在网络防火墙下仍然可以正常传输SOAP数据。
+
+SOAP可以简化网页服务器（Web Server）从XML数据库中提取数据的过程，节省去格式化页面时间，而且不同应用程序之间按照HTTP通信协议，因此执行信息互换时遵循XML格式可以使其抽象于语言实现、平台和硬件。
+
+SOAP1.1是业界共同的标准，属于第二代的XML协定（第一代具主要代表性的技术为XML-RPC以及WDDX）。
+
+下面用一个简单的例子来说明SOAP使用过程，一个SOAP消息可以发送到一个具有Web Service功能的Web站点（例如一个含有房价信息的数据库），消息的参数中标明这是一个查询消息，此站点将返回一个XML格式的信息，其中包含了查询结果（价格、位置、特点或者其他信息）。
+
+SOAP数据使用一种标准化的可分析的结构来进行传递，所以可以直接公开给被第三方站点使用。
+
+\begin{compactitem}
+\item SOAP封装（envelop），它定义了一个框架，描述消息中的内容是什么，是谁发送的，谁应当接受并处理它以及如何处理它们；
+\item SOAP编码规则（encoding rules），它定义了一种序列化的机制，用于表示应用程序需要使用的数据类型的实例；
+\item SOAP RPC表示（RPC representation），它定义了一个协定，用于表示远程过程调用和应答；
+\item SOAP绑定（binding），它定义了SOAP使用哪种协议交换信息。使用HTTP/TCP/UDP协议都可以。
+\end{compactitem}
+
+把SOAP绑定到HTTP提供了同时利用SOAP的样式和松散的灵活性的特点以及HTTP的丰富的特征库的优点。
+
+在HTTP上传送SOAP并不是说SOAP会覆盖现有的HTTP语义，而是HTTP上的SOAP语义会自然的映射到HTTP语义。在使用HTTP作为协议绑定的场合中，RPC请求映射到HTTP请求上，RPC应答映射到HTTP应答，而且在RPC上使用SOAP并不仅限于HTTP协议绑定。
+
+SOAP的消息格式采用XML，下面是SOAP的语法规则：
+
+\begin{compactitem}
+\item SOAP消息必须用XML来编码
+\item SOAP消息必须使用SOAP Envelope命名空间
+\item SOAP消息必须使用SOAP Encoding命名空间
+\item SOAP消息不能包含DTD引用
+\item SOAP消息不能包含XML处理指令
+\end{compactitem}
+
+下面是一个SOAP请求消息示例：
+
+\begin{lstlisting}[language=XML]
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <soapenv:Body>
+    <req:echo xmlns:req="http://localhost:8080/wxyc/login.do">
+      <req:category>classifieds</req:category>
+    </req:echo>
+  </soapenv:Body>
+</soapenv:Envelope>
+\end{lstlisting}
+
+下面是一个SOAP响应消息示例：
+
+\begin{lstlisting}[language=XML]
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+  <soapenv:Header>
+    <wsa:ReplyTo>
+      <wsa:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:Address>
+    </wsa:ReplyTo>
+    <wsa:From>
+      <wsa:Address>http://localhost:8080/axis2/services/MyService</wsa:Address>
+    </wsa:From>
+    <wsa:MessageID>ECE5B3F187F29D28BC11433905662036</wsa:MessageID>
+  </soapenv:Header>
+  <soapenv:Body>
+    <req:echo xmlns:req="http://localhost:8080/axis2/services/MyService/">
+      <req:category>classifieds</req:category>
+    </req:echo>
+  </soapenv:Body>
+</soapenv:Envelope>
+\end{lstlisting}
+
+
+\section{WSDL}
+
+WSDL（Web服务描述语言，Web Services Description Language）是为描述Web服务发布的XML格式。W3C组织（World Wide Web Consortium）没有批准1.1版的WSDL，WSDL 2.0是W3C的推荐标准（recommendation）并将被W3C组织批准为正式标准。
+
+WSDL描述Web服务的公共接口。这是一个基于XML的关于如何与Web服务通讯和使用的服务描述，也就是描述与目录中列出的Web服务进行交互时需要绑定的协议和信息格式。
+
+通常采用抽象语言描述该服务支持的操作和信息，使用的时候再将实际的网络协议和信息格式绑定给该服务。
+
+\section{UDDI}
+
+UDDI是统一描述、发现和集成（Universal Description, Discovery, and Integration）的缩写。它是一个基于XML的跨平台的描述规范，可以使世界范围内的企业在互联网上发布自己所提供的服务。
+
+UDDI是OASIS发起的一个开放项目，它使企业在互联网上可以互相发现并且定义业务之间的交互。UDDI业务注册包括三个元件：
+
+\begin{compactitem}
+\item 白页：有关企业的基本信息（例如地址、联系方式以及已知的标识）；
+\item 黄页：基于标准分类的目录；
+\item 绿页：与服务相关联的绑定信息，及指向这些服务所实现的技术规范的引用。
+\end{compactitem}
+
+UDDI是核心的Web服务标准之一。它通过SOAP（简单对象存取协议）进行消息传输，并使用WSDL（Web服务描述语言）描述Web服务及其接口使用。
+
+
+
+
+\chapter{Protocol Profile}
+
+
+为提高Web服务间的互操作能力，WS-I还特别发布了Web服务协议集（Profile）。
+
+协议集包含了一系列特定版本的核心定义（诸如SOAP和WSDL），以及对其使用上的限制与约束。WS-I还发布了用于部署协议集兼容Web服务的测试工具及相关用例。
+
+另外，一些新的标准已经或正在被开发来扩展WEB服务能力，这些标准通常以WS（Web Service）开头，以下是一个WS系列追加标准的不完全列表：
+
+\section{WS-Security}
+
+WS-Security（WS安全）定义了如何在SOAP中使用XML加密或XML签名来保护消息传递，可作为HTTPS保护的一种替代或扩充。
+
+\section{WS-Reliability}
+
+WS-Reliability（WS可信赖性）是一个来自OASIS的标准协议，用来提供可信赖的WEB服务间消息传递。
+
+
+
+
+\section{WS-Addressing}
+
+WS-Addressing（WS寻址）定义了在SOAP消息内描述发送/接收方地址的方式。
+
+\section{WS-Transaction}
+
+
+WS-Transaction（WS事务）定义事务处理方式。
+
+
+\section{WS-ReliableMessaging}
+
+WS-ReliableMessaging（WS可信赖消息）是一个提供信赖消息的协议，由Microsoft、BEA 和IBM发布并由OASIS对其实施标准化工作。
+
+
+
+

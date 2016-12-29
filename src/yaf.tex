@@ -3,11 +3,16 @@
 
 \chapter{Overview}
 
-Yaf（Yet Another Framework）扩展是一个用来开发web应用的php框架。
+Yaf（Yet Another Framework）扩展是一个用来开发Web应用程序的PHP框架，执行速度更快，内存占用更少。
 
 \begin{lstlisting}[language=bash]
 $ sudo pecl install yaf
 \end{lstlisting}
+
+Yaf需要SPL和PCRE的支持\footnote{SPL和PCRE都是PHP默认启用的扩展模块。}，除此之外构建Yaf扩展不需要其他扩展，而且Yaf并未与PHP进行捆绑，需要开发者自己单独安装。
+
+
+
 
 \begin{example}
 编译安装Yaf
@@ -18,13 +23,306 @@ $ make && make install
 \end{lstlisting}
 \end{example}
 
+Yaf有着和Zend Framework相似的API，相似的理念，而同时又保持着对Bingo的兼容，以此来提高开发效率，规范开发习惯。
+
+本着对性能的追求，Yaf把框架中不易变的部分抽象出来，采用PHP扩展实现(C语言)来保证性能。
+
+\begin{compactitem}
+\item 扩展逻辑相对比较稳定，一般不易变化。
+
+如果使用扩展实现逻辑不会带来额外的维护负担。
+\item 框架逻辑复杂，自检耗时耗内存都比较可观。
+
+如果使用扩展来实现，就能大幅减少这部分对资源的消耗。
+\end{compactitem}
+
+在同样功能下，Yaf和原生的PHP的性能损失小于10\%，同时Yaf的性能是Zend Framework的50～60倍，而且Yaf框架本身禁止了用户的危险的操作习惯。
+
+\begin{example}
+原生的PHP测试代码
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController {
+    public function actionIndex(){
+        echo 'Laruence';
+    }
+}
+$controller = new IndexController();
+$controller->actionIndex();
+\end{lstlisting}
+\end{example}
 
 
-构建Yaf扩展不需要其他扩展，而且Yaf并未与PHP进行捆绑，需要开发者自己单独安装。
+\begin{example}
+Yaf入口测试文件
+\begin{lstlisting}[language=PHP]
+<?php
+$conf = array(
+    'application.directory'=>'/home/laruence/local/www/htdocs/ap'
+);
+
+$app = new Yaf_Application($conf);
+$app->run();
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+Yaf默认的控制器测试文件
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public function actionIndex() {
+         $this->disableView();
+         echo 'Laruence';
+    }
+}
+\end{lstlisting}
+\end{example}
+
+下面使用Apache的ab工具来执行并发1,100,200的测试。
+
+\begin{example}
+1个并发，原生PHP请求1000次
+\begin{lstlisting}[language=bash]
+$ ./ab -n1000 -c1 http://127.0.0.1/orig.php
+
+Document Path:          orig.php
+Document Length:        8 bytes
+
+Concurrency Level:      1
+Time taken for tests:   0.463 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      130000 bytes
+HTML transferred:       8000 bytes
+Requests per second:    2159.41 [#/sec] (mean)
+Time per request:       0.463 [ms] (mean)
+Time per request:       0.463 [ms] (mean, across all concurrent requests)
+Transfer rate:          274.14 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     0    0   0.2      0       5
+Waiting:        0    0   0.2      0       5
+Total:          0    0   0.2      0       5
+
+Percentage of the requests served within a certain time (ms)
+  50%      0
+  66%      0
+  75%      0
+  80%      0
+  90%      0
+  95%      0
+  98%      0
+  99%      1
+ 100%      5 (longest request)
+\end{lstlisting}
+\end{example}
 
 
-Yaf没有定义自己的资源类型。
+\begin{example}
+1个并发，Yaf请求1000次
+\begin{lstlisting}[language=bash]
+$ ./ab -n1000 -c1 http://127.0.0.1/ap/index.php
 
+Document Path:          /ap/index.php
+Document Length:        8 bytes
+
+Concurrency Level:      1
+Time taken for tests:   0.525 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      130000 bytes
+HTML transferred:       8000 bytes
+Requests per second:    1906.24 [#/sec] (mean)
+Time per request:       0.525 [ms] (mean)
+Time per request:       0.525 [ms] (mean, across all concurrent requests)
+Transfer rate:          242.00 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     0    0   0.3      0       7
+Waiting:        0    0   0.3      0       7
+Total:          0    0   0.3      1       7
+ERROR: The median and mean for the total time are more than twice the standard
+       deviation apart. These results are NOT reliable.
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%      7 (longest request)
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+100个并发，原生PHP请求1000次
+\begin{lstlisting}[language=bash]
+$ ./ab -n1000 -c100 http://127.0.0.1/orig.php
+
+Document Path:          orig.php
+Document Length:        8 bytes
+
+Concurrency Level:      100
+Time taken for tests:   0.287 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      130000 bytes
+HTML transferred:       8000 bytes
+Requests per second:    3478.82 [#/sec] (mean)
+Time per request:       28.745 [ms] (mean)
+Time per request:       0.287 [ms] (mean, across all concurrent requests)
+Transfer rate:          441.65 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   1.0      0       6
+Processing:     5   27   4.8     27      35
+Waiting:        5   27   4.8     27      35
+Total:          6   27   4.6     27      36
+
+Percentage of the requests served within a certain time (ms)
+  50%     27
+  66%     28
+  75%     29
+  80%     31
+  90%     35
+  95%     35
+  98%     35
+  99%     35
+ 100%     36 (longest request)
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+100个并发，Yaf请求1000次
+\begin{lstlisting}[language=bash]
+$ ./ab -n1000 -c100 http://127.0.0.1/ap/index.php
+
+Document Path:          /ap/index.php
+Document Length:        8 bytes
+
+Concurrency Level:      100
+Time taken for tests:   0.316 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      130000 bytes
+HTML transferred:       8000 bytes
+Requests per second:    3165.24 [#/sec] (mean)
+Time per request:       31.593 [ms] (mean)
+Time per request:       0.316 [ms] (mean, across all concurrent requests)
+Transfer rate:          401.84 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   1.0      0       6
+Processing:     6   30   5.6     27      44
+Waiting:        6   30   5.6     27      44
+Total:          6   30   5.6     27      44
+
+Percentage of the requests served within a certain time (ms)
+  50%     27
+  66%     32
+  75%     34
+  80%     36
+  90%     37
+  95%     40
+  98%     42
+  99%     42
+ 100%     44 (longest request)
+\end{lstlisting}
+\end{example}
+
+\section{Memory}
+
+Yaf相比原生的PHP带来的额外的性能开销非常小，而且Yaf的框架类无需编译。
+
+
+
+Yaf的框架类在PHP启动时加载，并且常驻内存，因此Yaf可以通过更短的内存周转周期来提高内存利用率，降低内存占用率。
+
+虽然Yaf必须有一次IO操作（载入Controller），原生的PHP并不需要这一步，不过实际上框架的时间和真正应用逻辑的耗时相比只是很小的一部分。
+
+\section{Autoload}
+
+
+Yaf提供了灵活的自动加载，并且支持全局加载和局部加载两种加载规则，方便类库共享。
+
+Yaf在自启动的时候会通过SPL注册一个自己的Autoloader，出于性能的考虑，Yaf对于框架相关的MVC类——Yaf Autoloader只以目录映射的方式尝试一次。
+
+现在Yaf支持在PHP脚本中触发对Controller的自动加载，不过Controller的定位需要根据Module路由结果来判断，这就造成了 在Bootstrap或者RouteStarrup之前无法确定，所以对于Controller的加载，Yaf将只会尝试去加载默认Module的Controller，也就是只在\texttt{"\{项目路径\}/controllers"}目录下寻找。
+
+在use\_spl\_autoload关闭的情况下，Yaf Autoloader在一次找不到的情况下会立即返回，这样就剥夺了其后的自动加载器的执行机会。
+
+
+具体的目录映射规则如下:
+
+
+
+\zihao{6}
+\begin{longtable}{|m{50pt}|m{140pt}|m{140pt}|}
+%head
+\multicolumn{3}{r}{}
+\tabularnewline\hline
+类型&后缀(或者前缀, 可以通过php.ini中yaf.name\_suffix来切换)&映射路径
+\endhead
+%endhead
+
+%firsthead
+\caption{Yaf目录映射规则}\\
+\hline
+类型&后缀(或者前缀, 可以通过php.ini中yaf.name\_suffix来切换)&映射路径
+\endfirsthead
+%endfirsthead
+
+%foot
+\multicolumn{3}{r}{}
+\endfoot
+%endfoot
+
+%lastfoot
+\endlastfoot
+%endlastfoot
+\hline
+控制器	&Controller	&默认模块下为\texttt{\{项目路径\}/controllers/},否则为\texttt{\{项目路径\}/modules/\{模块名\}/controllers/}\\
+\hline
+数据模型	&Model		&\texttt{\{项目路径\}/models/}\\
+\hline
+插件		&Plugin		&\texttt{\{项目路径\}/plugins/}\\
+\hline
+\end{longtable}
+\zihao{5}
+
+对于非框架MVC相关的类，Yaf支持全局类和自身类的两种加载方式，并且Yaf支持大小写敏感和不敏感两种方式来处理文件路径。
+
+\subsection{Global Class}
+
+Yaf为了方便在一台服务器上部署的不同产品之间共享公司级别的共享库，支持全局类和本地类两种加载方式。
+
+全局类是指所有产品之间共享的类，这些类库的路径是通过yaf.library在php.ini（当然,如果PHP在编译的时候, 支持了with-config-file-scan-dir，那么也可以写在单独的yaf.ini中）。
+
+
+
+\subsection{Local Class}
+
+本地类是指产品自身的类库，这些类库的路径是通过在产品的配置文件中通过yaf.library配置的。
+
+在Yaf中，可以通过调用Yaf\_Loader的registerLocalNamespace()方法来申明哪些类前缀是本地类。
 
 
 
@@ -36,6 +334,7 @@ Yaf没有定义自己的资源类型。
 \begin{lstlisting}[language=bash]
 |— .htaccess // rewrite rules
 |— public
+|       `— .htaccess
 |       `— css
 |       `— js
 |       `— img
@@ -49,23 +348,36 @@ Yaf没有定义自己的资源类型。
 |        |— views
 |        |       `— index
 |        |                 `— index.phtml // view template for default action
-|        `— modules
-|— library
+|        |— library // 本地类库
+|        `— modules // 其他模块
+|— library // 全局类库
 |— models // Models
 |— plugins // Plugins
 \end{lstlisting}
 
 在Yaf应用程序的目录结构中，开发者需要把DocumentRoot指向application/public，而且只有public目录是可以公开访问的。
 
+Yaf提供了一个代码生成工具——yaf\_cg来生成Yaf应用程序的脚手架。
+
+
+\begin{lstlisting}[language=bash]
+$ cd /var/www/html
+$ php yaf_cg Sample
+$ ls output/Sample/
+$ application/  conf/  index.php  readme.txt
+\end{lstlisting}
+
+用户可以把上述生成的sample目录下的内容移动到Web服务器的documentRoot目录下，从而从脚手架开始Yaf应用程序的开发。
 
 
 \section{Intry Script}
 
 
-Yaf应用程序根目录（或public目录）下的index.php是整个Yaf应用程序唯一的入口，应该把所有请求都重定向到这个文件（在Apache+php\_mod模式下可以使用.htaccess）。
+Yaf应用程序根目录（或public目录）下的index.php是整个Yaf应用程序的所有请求的唯一入口，应该把所有请求都重定向到这个文件（在Apache+php\_mod模式下可以使用.htaccess）。
 
 
-
+\begin{example}
+public/index.php入口文件的配置（仅供参考）
 \begin{lstlisting}[language=PHP]
 <?php
 define("APPLICATION_PATH",dirname(dirname(__FILE__)));
@@ -75,99 +387,20 @@ $app->bootstrap() // call bootstrap methods defined in Bootstrap.php
      ->run();
 ?>
 \end{lstlisting}
+\end{example}
 
-\section{Rewrite Rule}
+\begin{example}
+入口文件
+\begin{lstlisting}[language=PHP]
+<?php
+define("APPLICATION_PATH",dirname(dirname(__FILE__)));
 
-
-Yaf使用的URL重写规则如下：
-
-
-\begin{lstlisting}[language=bash]
-# apache(.htaccess)
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule .* index.php
-
-# for nginx
-server {
-   listen 80;
-   server_name _;
-   root document_root;
-   index index.php index.html index.htm;
-   
-   if ( !-e $request_filename ) {
-      rewrite ^/(.*) /index.php/$1 last;
-   }
-}
-
-# for lighttpd
-$HTTP["host"] =~ "(www.)?domain.com$" {
-   url.rewrite = (
-       "^/(.+)/?$" => "/index.php/$1",
-   )
-}
+$app = new Yaf_Application(APPLICATION_PATH . "/conf/application.ini");
+$app->bootstrap() // call bootstrap methods defined in Bootstrap.php
+     ->run();
+?>
 \end{lstlisting}
-
-另外，在LNMP架构中使用Nginx和PHP-FPM时，可以使用如下的URL重写配置：
-
-\begin{lstlisting}[language=bash]
-server {
-   listen 80;
-   server_name _;
-   root document_root;
-   index index.php index.html index.htm;
-   
-   location / {
-      try_files $uri $uri/ /index.php$is_args$args;
-   }
-   
-   location ~ \.php$ {
-       fastcgi_pass 127.0.0.1:9000;
-       #fastcgi_pass unix:/tmp/php-cgi.sock;
-       fastcgi_index index.php;
-       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-       include fastcgi_params;  
-   }
-}
-\end{lstlisting}
-
-
-\subsection{PATH\_INFO}
-
-在使用Nginx作为单一入口的PHP框架的反向代理时，需要使用Nginx向Yaf/ThinkPHP等应用程序传递PATH\_INFO请求参数才能正常运行，例如：
-
-
-\begin{lstlisting}[language=bash]
-server {
-   listen 80;
-   server_name _;
-   root document_root;
-   index index.php index.html index.htm;
-   
-   location / {
-      try_files $uri $uri/ @path_rw;
-   }
-   
-   location @path_rw {
-      rewrite ^/(.*)$ /index.php/$1 last;
-   }
-   
-   location ~ \.php {
-       fastcgi_pass 127.0.0.1:9000;
-       #fastcgi_pass unix:/tmp/php-cgi.sock;
-       fastcgi_index index.php;
-       include fastcgi.conf;
-       
-       fastcgi_split_path_info ^(.+?\.php)(/.+)$;
-       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-       fastcgi_param SCRIPT_NAME $fastcgi_script_name;
-       fastcgi_param PATH_INFO $fastcgi_path_info;
-       #include fastcgi_params;  
-   }
-}
-\end{lstlisting}
-
-
+\end{example}
 
 
 
@@ -177,41 +410,19 @@ server {
 
 Yaf扩展定义了下面的预定义常量，这些常量在Yaf扩展编译进PHP核心或在运行时动态载入时可用。
 
-\begin{lstlisting}[language=bash]
-Constant [ string YAF_VERSION ] { 3.0.4 }
-Constant [ string YAF_ENVIRON ] { product }
-Constant [ integer YAF_ERR_STARTUP_FAILED ] { 512 }
-Constant [ integer YAF_ERR_ROUTE_FAILED ] { 513 }
-Constant [ integer YAF_ERR_DISPATCH_FAILED ] { 514 }
-Constant [ integer YAF_ERR_AUTOLOAD_FAILED ] { 520 }
-Constant [ integer YAF_ERR_NOTFOUND_MODULE ] { 515 }
-Constant [ integer YAF_ERR_NOTFOUND_CONTROLLER ] { 516 }
-Constant [ integer YAF_ERR_NOTFOUND_ACTION ] { 517 }
-Constant [ integer YAF_ERR_NOTFOUND_VIEW ] { 518 }
-Constant [ integer YAF_ERR_CALL_FAILED ] { 519 }
-Constant [ integer YAF_ERR_TYPE_ERROR ] { 521 }
-\end{lstlisting}
-
-
-
-
-\section{Runtime}
-
-Yaf提供的下面的这些函数的行为受到php.ini中的配置项的影响。
-
-
-\begin{longtable}{|m{150pt}|m{30pt}|m{150pt}|}
+\zihao{6}
+\begin{longtable}{|m{130pt}|m{125pt}|m{140pt}|}
 %head
 \multicolumn{3}{r}{}
 \tabularnewline\hline
-名字&默认&可修改范围
+常量名字&启用命名空间后的常量名&默认
 \endhead
 %endhead
 
 %firsthead
-\caption{Yaf 配置选项}\\
+\caption{Yaf的预定义常量}\\
 \hline
-名字&默认&可修改范围
+常量名字&启用命名空间后的常量名&默认
 \endfirsthead
 %endfirsthead
 
@@ -224,27 +435,87 @@ Yaf提供的下面的这些函数的行为受到php.ini中的配置项的影响�
 \endlastfoot
 %endlastfoot
 \hline
-\texttt{yaf.library}	 		&	&its PHP\_INI\_ALL value	\\
+YAF\_VERSION&Yaf\textbackslash VERSION&Yaf框架的三位版本信息（例如3.0.4）\\
 \hline
-\texttt{yaf.action\_prefer}		&0	&its PHP\_INI\_ALL value	\\
+YAF\_ENVIRON&Yaf\textbackslash ENVIRON& Yaf的环境常量, 指明了要读取的配置的节, 默认的是product\\
 \hline
-\texttt{yaf.lowcase\_path}		&0	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_STARTUP\_FAILED&Yaf\textbackslash ERR\textbackslash STARTUP\_FAILED)&Yaf的错误代码常量, 表示启动失败, 值为512\\
 \hline
-\texttt{yaf.use\_spl\_autoload}	&0	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_ROUTE\_FAILED&Yaf\textbackslash ERR\textbackslash ROUTE\_FAILED& Yaf的错误代码常量, 表示路由失败, 值为513\\
 \hline
-\texttt{yaf.forward\_limit}		&5	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_DISPATCH\_FAILED&Yaf\textbackslash ERR\textbackslash DISPATCH\_FAILED& Yaf的错误代码常量, 表示分发失败, 值为514\\
 \hline
-\texttt{yaf.name\_suffix}		&1	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_NOTFOUND\_MODULE&Yaf\textbackslash ERR\textbackslash NOTFOUD\textbackslash MODULE& Yaf的错误代码常量, 表示找不到指定的模块, 值为515\\
 \hline
-\texttt{yaf.name\_separator}	& 	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_NOTFOUND\_CONTROLLER&Yaf\textbackslash ERR\textbackslash NOTFOUND\textbackslash CONTROLLER& Yaf的错误代码常量, 表示找不到指定的Controller, 值为516\\
 \hline
-\texttt{yaf.cache\_config}		&0	&its PHP\_INI\_SYSTEM value\\
-\hline	
-\texttt{yaf.environ}			&product	&its PHP\_INI\_SYSTEM value	\\
+YAF\_ERR\_NOTFOUND\_ACTION&Yaf\textbackslash ERR\textbackslash NOTFOUD\textbackslash ACTION&Yaf的错误代码常量, 表示找不到指定的Action, 值为517\\
 \hline
-\texttt{yaf.use\_namespace}	&0	&its PHP\_INI\_ALL value	\\
+YAF\_ERR\_NOTFOUND\_VIEW&Yaf\textbackslash ERR\textbackslash NOTFOUD\textbackslash VIEW&Yaf的错误代码常量, 表示找不到指定的视图文件, 值为518\\
+\hline
+YAF\_ERR\_CALL\_FAILED&Yaf\textbackslash ERR\textbackslash CALL\_FAILED&Yaf的错误代码常量, 表示调用失败, 值为519\\
+\hline
+YAF\_ERR\_AUTOLOAD\_FAILED&Yaf\textbackslash ERR\textbackslash AUTOLOAD\_FAILED& Yaf的错误代码常量, 表示自动加载类失败, 值为520\\
+\hline
+YAF\_ERR\_TYPE\_ERROR&Yaf\textbackslash ERR\textbackslash TYPE\_ERROR&Yaf的错误代码常量, 表示关键逻辑的参数错误, 值为521\\
 \hline
 \end{longtable}
+\zihao{5}
+
+
+\section{Runtime}
+
+Yaf提供的下面的这些函数的行为受到php.ini中的配置项的影响。
+
+\zihao{6}
+\begin{longtable}{|m{80pt}|m{20pt}|m{60pt}|m{225pt}|}
+%head
+\multicolumn{4}{r}{}
+\tabularnewline\hline
+配置选项&默认&可修改范围&说明
+\endhead
+%endhead
+
+%firsthead
+\caption{Yaf 配置选项}\\
+\hline
+配置选项&默认&可修改范围&说明
+\endfirsthead
+%endfirsthead
+
+%foot
+\multicolumn{4}{r}{}
+\endfoot
+%endfoot
+
+%lastfoot
+\endlastfoot
+%endlastfoot
+\hline
+\texttt{yaf.library}	 		&NULL&PHP\_INI\_ALL&全局类库的目录路径\\
+\hline
+\texttt{yaf.action\_prefer}	&0	&PHP\_INI\_ALL 	&\\
+\hline
+\texttt{yaf.lowcase\_path}	&0	&PHP\_INI\_ALL 	&\\
+\hline
+\texttt{yaf.use\_spl\_autoload}&0	&PHP\_INI\_ALL&开启的情况下, Yaf在加载不成功的情况下, 会继续让PHP的自动加载函数加载, 从性能考虑, 除非特殊情况, 否则保持这个选项关闭\\
+\hline
+\texttt{yaf.forward\_limit}	&5	&PHP\_INI\_ALL&forward最大嵌套深度\\
+\hline
+\texttt{yaf.name\_suffix}	&1	&PHP\_INI\_ALL&在处理Controller, Action, Plugin, Model的时候, 类名中关键信息是否是后缀式, 比如UserModel, 而在前缀模式下则是ModelUser\\
+\hline
+\texttt{yaf.name\_separator}&\texttt{""}&PHP\_INI\_ALL&在处理Controller, Action, Plugin, Model的时候, 前缀和名字之间的分隔符, 默认为空, 也就是UserPlugin, 加入设置为\texttt{"\_"}, 则判断的依据就会变成\texttt{"User\_Plugin"}, 这个主要是为了兼容已有的命名规范\\
+\hline
+\texttt{yaf.cache\_config}	&0	&PHP\_INI\_SYSTEM&是否缓存配置文件(只针对INI配置文件生效), 打开此选项可在复杂配置的情况下提高性能\\
+\hline	
+\texttt{yaf.environ}		&product	&PHP\_INI\_SYSTEM&环境名称, 当用INI作为Yaf的配置文件时, 这个指明了Yaf将要在INI配置中读取的节的名字 \\
+\hline
+\texttt{yaf.use\_namespace}	&0	&PHP\_INI\_ALL&开启的情况下, Yaf将会使用命名空间方式注册自己的类, 比如Yaf\_Application将会变成Yaf\textbackslash Application\\
+\hline
+\end{longtable}
+\zihao{5}
+
+在开启yaf.cache\_config的情况下，Yaf会使用INI文件路径作为Key——这就有一个陷阱——如果在一台服务器上同时运行两个应用, 那么它们必须不能使用同一个路径名下的INI配置文件，否则就会出现Application Path混乱的问题，所以尽量不要使用相对路径。
 
 
 \subsection{yaf.library}
@@ -308,9 +579,11 @@ yaf.use\_namespace(integer)-如果此值为On，则Yaf的所有类都将在命�
 
 \section{Configuration}
 
+Yaf提供了强大而又高度灵活的配置文件支持，并支持缓存配置文件来避免复杂的配置结构带来的性能损失。
 
+Yaf默认的应用配置文件是application.ini，INI配置文件支持继承，支持分节。
 
-Yaf默认的应用配置文件是application.ini，支持常量，例如：
+INI配置文件还支持常量，因此INI支持直接使用PHP中的已定义常量（例如下面的APPLICATION\_PATH）。
 
 \begin{lstlisting}[language=bash]
 [yaf]
@@ -321,6 +594,8 @@ application.directory = APPLICATION_PATH "/application"
 [product:yaf]
 foo=bar
 \end{lstlisting}
+
+开发者无需担心配置文件太大造成性能问题，Yaf会在运行的第一时间在载入配置文件，并且把格式化后的内容存储在内存中，直到配置文件再次被修改才会重新载入配置文件。
 
 Yaf默认的Bootstrap.php的内容如下：
 
@@ -376,23 +651,23 @@ yaf.dispatcher.catchException = 0
 
 
 \zihao{6}
-\begin{longtable}{|m{160pt}|m{220pt}|}
+\begin{longtable}{|m{150pt}|m{40pt}|m{220pt}|}
 %head
-\multicolumn{2}{r}{}
+\multicolumn{3}{r}{}
 \tabularnewline\hline
-名字&默认
+名字&类型&默认
 \endhead
 %endhead
 
 %firsthead
 \caption{Yaf Application配置选项}\\
 \hline
-名字&默认
+名字&类型&默认
 \endfirsthead
 %endfirsthead
 
 %foot
-\multicolumn{2}{r}{}
+\multicolumn{3}{r}{}
 \endfoot
 %endfoot
 
@@ -400,40 +675,42 @@ yaf.dispatcher.catchException = 0
 \endlastfoot
 %endlastfoot
 \hline
-\texttt{application.directory} &				\\
+\texttt{application.directory} 		&string			&				\\
 \hline
-\texttt{application.ext} &\texttt{"php"}	\\
+\texttt{application.ext} 				&string			&\texttt{"php"}	\\
 \hline
-\texttt{application.view.ext} &\texttt{"phtml"}	\\
+\texttt{application.view.ext} 			&string			&\texttt{"phtml"}	\\
 \hline
-\texttt{application.modules} &\texttt{"index"}	\\
+\texttt{application.modules} 		&string			&\texttt{"index"}	\\
 \hline
-\texttt{application.library} &\texttt{application.directory . "/library"}	\\
+\texttt{application.library} 			&string			&\texttt{application.directory . "/library"}	\\
 \hline
-\texttt{application.library.directory} &\texttt{application.directory . "/library"}	\\
+\texttt{application.library.directory} 	&string			&\texttt{application.directory . "/library"}	\\
 \hline
-\texttt{application.library.namespace} &\texttt{""}	\\
+\texttt{application.library.namespace} &string			&\texttt{""}	\\
 \hline
-\texttt{application.bootstrap} &\texttt{application.directory . "/Bootstrap" . application.ext}	\\
+\texttt{application.bootstrap} 		&string			&\texttt{application.directory . "/Bootstrap" . application.ext}	\\
 \hline
-\texttt{application.baseUri} &\texttt{""}	\\
+\texttt{application.baseUri} 			&string			&\texttt{""}	\\
 \hline
-\texttt{application.dispatcher.defaultRoute} & 	\\
+\texttt{application.dispatcher.defaultRoute} & string		&	\\
 \hline
-\texttt{application.dispatcher.throwException} &1	\\
+\texttt{application.dispatcher.throwException} &bool	&1	\\
 \hline
-\texttt{application.dispatcher.catchException} &0	\\
+\texttt{application.dispatcher.catchException} &bool		&0	\\
 \hline
-\texttt{application.dispatcher.defaultModule} &\texttt{"index"	}\\
+\texttt{application.dispatcher.defaultModule} &string	&\texttt{"index"	}\\
 \hline
-\texttt{application.dispatcher.defaultController} &\texttt{"index"}	\\
+\texttt{application.dispatcher.defaultController}&string	&\texttt{"index"}	\\
 \hline
-\texttt{application.dispatcher.defaultAction} &\texttt{"index"}	\\
+\texttt{application.dispatcher.defaultAction} &string		&\texttt{"index"}	\\
 \hline
-\texttt{application.system} &\\
+\texttt{application.system} 			&string			&\\
 \hline
 \end{longtable}
 \zihao{5}
+
+
 
 \subsection{application.directory}
 
@@ -444,7 +721,7 @@ application.directory是Yaf中唯一一个没有默认值的配置项，需要�
 
 \subsection{application.ext}
 
-application.ext(string)-PHP脚本的扩展名，类的自动加载需要用到它( Yaf\_Loader)。
+application.ext(string)-PHP脚本的扩展名（默认为php），类的自动加载需要用到它( Yaf\_Loader)。
 
 \subsection{application.view.ext}
 
@@ -455,9 +732,11 @@ application.view.ext(string)-视图模板扩展名。
 
 application.modules(string)-注册的模块列表（以逗号分隔），用于路由处理，特别是当PATH\_INFO超过三段的时候，Yaf需要用它来判断第一段是否是一个模块。
 
+开发者只能申明存在的模块名，而且如果要定义这个值，一定要定义Index Module。
+
 \subsection{application.library}
 
-application.library(string)-本地类库的目录（参见Yaf\_Loader 和 yaf.library），而且该配置项也可以是一个数组。
+application.library(string)-本地（自身）类库的目录（参见Yaf\_Loader 和 yaf.library）的绝对目录地址，而且该配置项也可以是一个数组。
 
 当application.library是数组的时候，类库的路径将尝试使用application.library.directory的值。
 
@@ -472,23 +751,27 @@ application.library.namespace(string)-逗号分隔的本地类库命名空间前
 
 \subsection{application.bootstrap}
 
-application.bootstrap(string)-Bootstrap类脚本文件的绝对路径。
+application.bootstrap(string)-Bootstrap类脚本文件的绝对路径（默认为\$document\_root/application/Bootstrap.php）。
 
 \subsection{application.baseUri}
 
-application.baseUri(string)-路由处理中需要忽略的路径前缀。例如，请求``/prefix/controller/action"时，如果将application.baseUri设置为``/prefix"，那么只有``/controller/action"会被当做路由路径。
+application.baseUri(string)-路由处理中需要忽略的路径前缀，一般不需要设置，Yaf会自动判断.。例如，请求``/prefix/controller/action"时，如果将application.baseUri设置为``/prefix"，那么只有``/controller/action"会被当做路由路径。
 
 通常情况下，不需要设置application.baseUri的值。
 
 \subsection{application.dispatcher.throwException}
 
-application.dispatcher.throwException(bool)-开启此项时，Yaf会在发生错误的地方抛出异常（参见Yaf\_Dispatcher::throwException()）。
+application.dispatcher.throwException(bool)-在出错的时候是否抛出异常。开启此项时，Yaf会在发生错误的地方抛出异常（参见Yaf\_Dispatcher::throwException()）。
 
 
 \subsection{application.dispatcher.catchException}
 
 
-application.dispatcher.catchException(bool)-开启此项，如果有未捕获的异常，Yaf将会把它定向到Error Controller中的Error Action（参见Yaf\_Dispatcher::catchException()）。
+application.dispatcher.catchException(bool)-是否使用默认的异常捕获Controller。开启此项，如果有未捕获的异常，Yaf将会把控制权交给ErrorController中的errorAction()方法（参见Yaf\_Dispatcher::catchException()）。
+
+开发者可以使用\texttt{\$request->getException()}获得此异常对象。
+
+
 
 \subsection{application.dispatcher.defaultRoute}
 
@@ -510,7 +793,221 @@ application.dispatcher.defaultAction(string)-默认Action名（参见 Yaf\_Dispa
 
 \subsection{application.system}
 
-application.system(string)-在application.ini中设置Yaf运行时配置（例如application.system.lowcase\_path等），注意仅有PHP\_INI\_ALL配置项可以这样设置。
+
+
+application.system(string)-在application.ini中设置Yaf运行时配置，注意仅有PHP\_INI\_ALL配置项可以这样设置。
+
+开发者可以通过application.system.*属性来自定义Yaf的运行时配置选项（例如application.system.lowcase\_path等）。
+
+\section{Rewrite Rule}
+
+
+除非使用基于Query String的路由协议（Yaf\_Route\_Simple和Yaf\_Route\_Supervar），否则需要使用Apache或Nginx提供的URL Rewrite规则把所有的请求都重定向到Yaf应用程序的入口文件。
+
+
+Yaf使用的URL重写规则如下：
+
+
+\begin{lstlisting}[language=bash]
+# apache(.htaccess)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule .* index.php
+
+# for nginx(nginx.conf)
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   if ( !-e $request_filename ) {
+      rewrite ^/(.*) /index.php/$1 last;
+   }
+}
+
+# for lighttpd(lighttpd.conf)
+$HTTP["host"] =~ "(www.)?domain.com$" {
+   url.rewrite = (
+       "^/(.+)/?$" => "/index.php/$1",
+   )
+}
+
+# for sae(config.yaml)
+name: your_app_name
+varsion: 1
+handle: 
+  - rewrite: if(!is_dir() && !is_file() && path ~ "^(.*)$" ) goto "/index.php"
+\end{lstlisting}
+
+另外，在LNMP架构中使用Nginx和PHP-FPM时，可以使用如下的URL重写配置：
+
+\begin{lstlisting}[language=bash]
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   location / {
+      try_files $uri $uri/ /index.php$is_args$args;
+   }
+   
+   location ~ \.php$ {
+       fastcgi_pass 127.0.0.1:9000;
+       #fastcgi_pass unix:/tmp/php-cgi.sock;
+       fastcgi_index index.php;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       include fastcgi_params;  
+   }
+}
+\end{lstlisting}
+
+
+\subsection{PATH\_INFO}
+
+在使用Nginx作为单一入口的PHP框架的反向代理时，需要使用Nginx向Yaf/ThinkPHP等应用程序传递PATH\_INFO请求参数才能正常运行，例如：
+
+
+\begin{lstlisting}[language=bash]
+server {
+   listen 80;
+   server_name _;
+   root document_root;
+   index index.php index.html index.htm;
+   
+   location / {
+      try_files $uri $uri/ @path_rw;
+   }
+   
+   location @path_rw {
+      rewrite ^/(.*)$ /index.php/$1 last;
+   }
+   
+   location ~ \.php {
+       fastcgi_pass 127.0.0.1:9000;
+       #fastcgi_pass unix:/tmp/php-cgi.sock;
+       fastcgi_index index.php;
+       include fastcgi.conf;
+       
+       fastcgi_split_path_info ^(.+?\.php)(/.+)$;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+       fastcgi_param PATH_INFO $fastcgi_path_info;
+       #include fastcgi_params;  
+   }
+}
+\end{lstlisting}
+
+
+
+\section{Resource Type}
+
+Yaf没有定义自己的资源类型。
+
+
+\section{View Engine}
+
+
+Yaf提供了一个高性能的视图引擎——Yaf\_View\_Simple，同时Yaf的高度灵活可扩展的框架结构支持自定义视图引擎、插件以及自定义路由等。
+
+\section{Route Engine}
+
+Yaf内置多种路由，可以兼容目前常见的路由协议。
+
+\chapter{Yaf Workflow}
+
+Yaf提供了完善的API并且支持Bootstrap和插件机制，其整体流程图如下：
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[scale=0.6]{yaf_sequence.png}
+\caption{Yaf的整体执行流程}
+\end{figure}
+
+
+\chapter{Yaf Environment}
+
+
+Yaf和用户共用一个配置空间, 也就是在Yaf\_Application初始化时给出的配置文件中的配置。
+
+作为区别, Yaf的配置项都以ap开头，Yaf的核心必不可少的配置项只有一个（也就是application.directory），而且这个也可以有默认参数。
+
+\begin{compactitem}
+\item application.directory - Yaf应用程序的绝对目录路径
+\end{compactitem}
+
+
+
+Yaf通过在不同的环境中, 选取不同的配置节, 再结合配置可继承, 来实现一套配置适应多种环境（线上、测试和开发）。
+
+
+\chapter{Yaf\_Class}
+
+
+Yaf的类的加载规则都是一样的——Yaf规定类名中必须包含路径信息，也就是以下划线\texttt{"\_"}分割的目录信息，Yaf将依照类名中的目录信息来完成自动加载。
+
+默认情况下，在没有申明本地类的情况下，Yaf把Foo\_Dummy\_Bar类会映射到/Foo/Dummy/Bar.php
+
+\begin{example}
+Yaf按照路径查找类Foo\_Dummy\_Bar
+\begin{lstlisting}[language=bash]
+//Yaf将在如下路径寻找类Foo_Dummy_Bar
+{类库路径(php.ini中指定的yaf.library)}/Foo/Dummy/Bar.php
+\end{lstlisting}
+\end{example}
+
+如果通过如下方式调用了registerLocalNamespace()注册了本地类，那么就会在指定的路径中查找Foo\_Dummy\_Bar类。
+
+\begin{example}
+使用registerLocalNamespace()注册本地类
+\begin{lstlisting}[language=PHP]
+<?php
+// 申明凡是以Foo和Local开头的类都是本地类
+$loader = Yaf_Loader::getInstance();
+$loader->registerLocalNamespace(array("Foo","Local"));
+\end{lstlisting}
+\end{example}
+
+在通过申明注册本地类后，Yaf会按照类库路径来查找Foo\_Dummy\_Bar类，例如：
+
+\begin{example}
+Yaf按照本地类库路径查找类Foo\_Dummy\_Bar
+\begin{lstlisting}[language=PHP]
+//Yaf将在如下路径寻找类Foo_Dummy_Bar
+{类库路径(conf/application.ini中指定的yaf.library)}/Foo/Dummy/Bar.php
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+\end{example}
+
+
+
 
 \chapter{Yaf\_MVC}
 
@@ -621,12 +1118,15 @@ Yaf默认的控制器为controllers/Index.php，其内容如下：
 class IndexController extends Yaf_Controller_Abstract {
     /* default action name */
     public function indexAction() {
-        $this->_view->word = "hello world, yaf";
+        $this->_view->content = "hello world, yaf";
         // or
         // $this->getView()->content = "hello world, yaf";
+        // $this->getView()->assign("content","Hello world, yaf");
     }
 }
 \end{lstlisting}
+
+Yaf中的默认的模块、控制器和动作都是以Index命名的，也可以通过配置文件进行修改。例如，默认模块的控制器在application目录下的controllers目录下，Action的命名规则是“名字+Action”。
 
 \section{Model}
 
@@ -648,7 +1148,7 @@ class IndexController extends Yaf_Controller_Abstract {
 
 
 
-Yaf默认的视图文件为application/views/index/index.phtml，Yaf提供了一个默认的模板引擎——Yaf\_View\_Simple来支持使用PHP编码的视图模板。
+Yaf默认模块的视图文件为application/views/index/index.phtml，Yaf提供了一个默认的模板引擎——Yaf\_View\_Simple来支持使用PHP编码的视图模板。
 
 \begin{lstlisting}[language=HTML]
 <html>
@@ -675,6 +1175,7 @@ Yaf默认的视图文件为application/views/index/index.phtml，Yaf提供了一
 </html>
 \end{lstlisting}
 
+除了默认的视图引擎之外，Yaf也支持用户自定义自己的视图引擎（例如Smarty）。
 
 \chapter{Yaf\_Application}
 
@@ -763,7 +1264,7 @@ public static void Yaf_Application::app ( void )
 public void Yaf_Application::bootstrap ([ Yaf_Bootstrap_Abstract $bootstrap ] )
 \end{lstlisting}
 
-具体来说，Yaf\_Application::bootstrap()方法会指示Yaf\_Application去寻找Bootstrap，并按照声明的顺序，执行所有在Bootstrap类中定义的以\_init开头的方法。 如果没有提供变量bootstrap，Yaf默认会去application.directory中寻找Bootstrap。
+具体来说，Yaf\_Application::bootstrap()方法会指示Yaf\_Application去寻找Bootstrap，并按照申明的顺序，执行所有在Bootstrap类中定义的以\_init开头的方法。 如果没有提供变量bootstrap，Yaf默认会去application.directory中寻找Bootstrap。
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -1294,7 +1795,7 @@ $app->run();
 
 \subsection{Yaf\_Application::getModules()}
 
-获取在配置文件中声明的模块，如果没有声明，它的默认值将是``Index"。
+获取在配置文件中申明的模块，如果没有申明，它的默认值将是``Index"。
 
 
 
@@ -1394,6 +1895,39 @@ Yaf\_Application不能被反序列化。
 \begin{lstlisting}[language=PHP]
 private void Yaf_Application::__wakeup ( void )
 \end{lstlisting}
+
+\chapter{Yaf\_Bootstrap}
+
+Bootstrap是Yaf提供的一个全局配置的入口，开发者可以在Bootstrap.php中进行全局自定义操作。
+
+\begin{lstlisting}[language=PHP]
+$app = new Yaf\_Application($config);
+$app
+->bootstrap() // 可选的调用
+->run();
+\end{lstlisting}
+
+
+默认情况下，在一个Yaf\_Application被实例化之后，运行Yaf\_Application::run()之前，Yaf允许开发者可选的运行Yaf\_Application::bootstrap()。
+
+\begin{compactitem}
+\item 运行Bootstrap
+
+
+\begin{lstlisting}[language=PHP]
+$app = new Yaf_Application($config);
+$app->boostrap()
+       ->run();
+\end{lstlisting}
+
+\item 不运行Bootstrap
+
+\begin{lstlisting}[language=PHP]
+$app = new Yaf\_Application($config);
+$app->run();
+\end{lstlisting}
+
+\end{compactitem}
 
 \chapter{Yaf\_Bootstrap\_Abstract}
 
@@ -3380,7 +3914,8 @@ abstract public void Yaf_View_Interface::setScriptPath ( string $template_dir )
 \chapter{Yaf\_View\_Simple}
 
 
-Yaf内建了一个模板引擎Yaf\_View\_Simple，它是个只支持PHP脚本的简单而快速的模板引擎。
+
+Yaf提供了高性能的视图引擎——也就是Yaf内建的一个模板引擎Yaf\_View\_Simple，它是个只支持PHP脚本的简单而快速的模板引擎。
 
 
 
@@ -4309,7 +4844,6 @@ public static bool Yaf_Registry::set ( string $name , string $value )
 
 
 
-
 \begin{lstlisting}[language=PHP]
 Yaf_Request_Abstract {
     /* Constants */
@@ -4359,6 +4893,46 @@ Yaf_Request_Abstract {
     public void setRouted ([ string $flag ] )
 }
 \end{lstlisting}
+
+
+
+Yaf\_Request\_Abstract的getPost()和getQuery()等方法并没有对应的setter方法，而且这些方法是直接从PHP内部的\$\_POST和\$\_GET等全局变量的原生变量只读的查询值，所以这里就产生了一个问题—通过在PHP脚本中对这些变量的修改，并不能反映到getPost()/getQuery()等方法。
+
+\begin{example}
+POST变量只读
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public functin indexAction() {
+        $_POST['name'] = 'new_name';
+        // 此时对POST的修改, 并不能反映到getPost上
+        echo $this->getRequest()->getPost('name'); // old name
+    }
+}
+\end{lstlisting}
+\end{example}
+
+针对getPost()和getQuery()的设计是经过深思熟虑的, 也可以不依赖PHP的variable\_orders的配置，但是带来一个问题就是QA和Rd无法通过修改这些变量来做测试数据。
+
+为了解决上述问题，Yaf提供了一个debug模式，在这个模式下的getPost()/getQuery()/getServer()/getCookie()将从符号表中的对应变量查询值，从而可以让我们直接对PHP的超级变量做的修改能反映到对应的Yaf\_Request\_Abstract的方法上。
+
+\begin{lstlisting}[language=bash]
+$ PHP_BIN/phpize
+$ ./configure --enable-ap-debug --with-php-config=$PHP_BIN/php-config
+$ make
+$ make install  
+\end{lstlisting}
+
+
+在正式的生产环境中禁止以Debug模式编译Yaf，除了性能损耗之外就是Yaf的Debug模式有悖于\$\_POST等全局变量的只读特性。
+
+为了提醒在生产环境中开启Debug模式的问题，Yaf的Debug模式在Yaf\_Application的构造函数中会触发一个E\_STRICT错误提示：
+
+\begin{lstlisting}[language=bash]
+Strict Standards: you are running ap in debug mode
+\end{lstlisting}
+
+
 
 
 \section{Property}
@@ -5104,6 +5678,10 @@ echo $response;
 public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 \end{lstlisting}
 
+\begin{compactitem}
+\item \$key 如果没有具体清除哪个key所对应的内容，那么所有内容将被清除
+\end{compactitem}
+
 
 
 \subsection{Yaf\_Response\_Abstract::clearHeaders()}
@@ -5111,13 +5689,16 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::clearHeaders ( void )
 \end{lstlisting}
+
+
+
 \subsection{Yaf\_Response\_Abstract::\_\_clone()}
 
 
 \begin{lstlisting}[language=PHP]
-
+private void Yaf_Response_Abstract::__clone ( void )
 \end{lstlisting}
 
 
@@ -5125,14 +5706,14 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+public Yaf_Response_Abstract::__construct ( void )
 \end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::\_\_destruct()}
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::__destruct ( void )
 \end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::getBody()}
@@ -5141,23 +5722,67 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+public mixed Yaf_Response_Abstract::getBody ([ string $key ] )
 \end{lstlisting}
+
+\begin{compactitem}
+\item\$key - body所对应的key。
+
+如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY。如果传入一个NULL，所有的内容将会以数组形式被返回。
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+$response = new Yaf_Response_Http();
+$response->setBody('Hello')->setBody(' World','footer');
+var_dump($response->getBody()); // default
+var_dump($response->getBody(Yaf_Response_Abstract::DEFAULT_BODY)); // same as above
+var_dump($response->getBody('footer'));
+var_dump($response->getBody(NULL));// get all
+// 以上例程的输出类似于：
+// string(5) "Hello"
+// string(5) "Hello"
+// string(6) " World"
+// array(2) {
+//   ["content"]=>
+//   string(5) "Hello"
+//   ["footer"]=>
+//   string(6) " World"
+// }
+\end{lstlisting}
+
 
 \subsection{Yaf\_Response\_Abstract::getHeader()}
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::getHeader ( void )
 \end{lstlisting}
 
 
 
 \subsection{Yaf\_Response\_Abstruct::prependBody()}
 
-
+往已有的响应body前插入新的内容并返回bool值。
 
 \begin{lstlisting}[language=PHP]
+public bool Yaf_Response_Abstract::prependBody ( string $content [, string $key ] )
+\end{lstlisting}
 
+\begin{compactitem}
+\item \$body - content string
+\item \$key - body所对应的key。
+
+可以设置一个body的键值对，如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+$response = new Yaf_Response_Http();
+$response->setBody('World')->prependBody('Hello');
+
+echo $response;
+// 以上例程的输出类似于：
+// Hello World
 \end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::response()}
@@ -5166,8 +5791,19 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::response ( void )
 \end{lstlisting}
+
+\begin{lstlisting}[language=PHP]
+<?php
+$response = new Yaf_Response_Http();
+$response->setBody('Hello')->setBody(' World','footer');
+$response->response();
+// 以上例程的输出类似于：
+// Hello World
+\end{lstlisting}
+
+
 
 \subsection{Yaf\_Response\_Abstract::setAllHeaders()}
 
@@ -5176,7 +5812,7 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+protected void Yaf_Response_Abstract::setAllHeaders ( void )
 \end{lstlisting}
 
 
@@ -5187,35 +5823,284 @@ public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+public bool Yaf_Response_Abstract::setBody ( string $content [, string $key ] )
 \end{lstlisting}
 
+\begin{compactitem}
+\item \$body - content string
+\item \$key - body所对应的key，可以设置一个body的键值对，如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
+\end{compactitem}
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$response = new Yaf_Response_Http();
+$response->setBody('Hello')->setBody(' World','footer');
+print_r($response);
+echo $response;
+// 以上例程的输出类似于：
+// Yaf_Response_Http Object
+// (
+//     [_header:protected] => Array
+//         (
+//         )
+
+//     [_body:protected] => Array
+//         (
+//             [content] => Hello
+//             [footer] =>  World
+//         )
+
+//     [_sendheader:protected] => 1
+//     [_response_code:protected] => 200
+// )
+// Hello World
+\end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::setHeader()}
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::setHeader ( void )
 \end{lstlisting}
+
+\begin{example}
+从Controller发送HTTP头
+\begin{lstlisting}[language=PHP]
+<?php
+/* Set Content-Type */
+$response = $this->getResponse();
+$response->setHeader('Content-Type','text/html; charset=utf-8');
+
+$response->response();
+
+/* Set HTTP Status */
+$response = $this->getResponse();
+$response->setHeader($this->getRequest()->getServer('SERVER_PROTOCOL'),'404 NOT FOUND');
+
+$response->response();
+\end{lstlisting}
+\end{example}
+
+除了使用getServer()来获取\$\_SERVER全局变量之外，还可以直接使用\$\_SERVER。
+
 
 \subsection{Yaf\_Response\_Abstract::setRedirect()}
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Response_Abstract::setRedirect ( void )
 \end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::\_\_toString()}
 
 
 \begin{lstlisting}[language=PHP]
-
+private void Yaf_Response_Abstract::__toString ( void )
 \end{lstlisting}
+
+
+\chapter{Yaf\_Route\_Interface}
+
+Yaf\_Route\_Interface是Yaf路由协议的标准接口, 它的存在使得用户可以自定义路由协议。
+
+
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Interface {
+    /* 方法 */
+    abstract public string assemble ( array $info [, array $query ] )
+    abstract public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+\section{Method}
+
+\subsection{Yaf\_Route\_Interface::assemble()}
+
+将指定路由规则组合成一个url
+
+
+
+\begin{lstlisting}[language=PHP]
+abstract public string Yaf_Route_Interface::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+这个方法会将指定的参数加上自定义的参数组合成一个url，所有route必须结合其路由规则来实现这个方法。
+
+\begin{compactitem}
+\item \$info
+\item \$query
+\end{compactitem}
+
+
+
+
+\subsection{Yaf\_Route\_Interface::route()}
+
+路由一个请求
+
+
+\begin{lstlisting}[language=PHP]
+abstract public bool Yaf_Route_Interface::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+
+Yaf\_Route\_Interface::route() 是用户自定义路由唯一需要实现的方法。
+
+\begin{compactitem}
+\item 如果这个方法返回TRUE，那么路由进程将会中止。
+\item 如果这个方法返回FLASE，那么Yaf\_Router 将会调用路由堆栈中的下一个路由来路由请求。
+\end{compactitem}
+
+这个方法会设置路由的结果给参数请求，通过调用Yaf\_Request\_Abstract::setControllerName()，Yaf\_Request\_Abstract::setActionName() 和 Yaf\_Request\_Abstract::setModuleName()。
+
+这个方法也需要调用Yaf\_Request\_Abstract::setRouted()做最后的请求路由。
+
+\begin{compactitem}
+\item \$request - Yaf\_Request\_Abstract实例
+\end{compactitem}
+
+
+\chapter{Yaf\_Route\_Map}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Map implements Yaf_Route_Interface {
+    /* 属性 */
+    protected $_ctl_router ;
+    protected $_delimeter ;
+    /* 方法 */
+    public string assemble ( array $info [, array $query ] )
+    public __construct ([ string $controller_prefer = false [, string $delimiter = '' ]] )
+    public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+\section{Property}
+
+
+\subsection{\$\_ctl\_router}
+
+
+
+\subsection{\$\_delimeter}
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Map::assemble()}
+
+组合url
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Route_Map::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+
+根据指定参数和自定义参数将map这个route组合成一个url
+
+\begin{compactitem}
+\item \$info
+
+需要传入一个数组，数组的key可以为:a或者:c，其中:a表示action，:c表示controller。
+
+
+当map route初始化时，controller\_prefer为false时，这个参数需要传入:c。当controller\_prefer 为true时，这个参数需要传入:a。
+
+\item \$query
+
+用户自定义的query string，将根据此路由规则拼接在url中
+
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+$router = new Yaf_Router();
+$route = new Yaf_Route_Map();
+
+$router->addRoute('map',$route);
+var_dump($router->getRoute('map')->assemble(
+   array(':c'=>'foo_bar'),
+   array('tkey1'=>'tval1','tkey2'=>'tval2')
+));
+
+$route = new Yaf_Route_Map(true,'_');
+$router->addRoute('map',$route);
+var_dump($router->getRoute('map')->assemble(
+   array(':a'=>'foo_bar'),
+   array('tkey1'=>'tval1','tkey2'=>'tval2')
+));
+
+// 以上例程的输出类似于：
+// string(%d) "/foo/bar?tkey1=tval1&tkey2=tval2"
+// string(%d) "/foo/bar/_/tkey1/tval1/tkey2/tval2"
+\end{lstlisting}
+
+
+
+\subsection{Yaf\_Route\_Map::\_\_construct()}
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Route_Map::__construct ([ string $controller_prefer = false [, string $delimiter = '' ]] )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$controller\_prefer - 结果是否应该考虑作为controller或action
+\item \$delimeter
+\end{compactitem}
+
+
+
+\subsection{Yaf\_Route\_Map::route()}
 
 
 \begin{lstlisting}[language=PHP]
 
 \end{lstlisting}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
 
 
 \chapter{Yaf\_Exception}

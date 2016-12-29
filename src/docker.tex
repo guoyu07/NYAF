@@ -1,0 +1,77 @@
+\part{Docker}
+
+\chapter{Overview}
+
+
+\section{Base Docker}
+
+
+
+\subsection{Alpine}
+
+
+Alpine Linux是一个基于uClibc和Busybox的面向安全应用的轻量级Linux发行版，可以用来作为路由器、防火墙、VPN、VoIP以及服务器的操作系统。
+
+Docker的发展促进了Alpine Linux的推广，国内网络限制导致apk add过程中下载apk包的速度很慢，因此在没有第三方镜像的情况下需要构建一个本地的alpine镜像。
+
+docker-alpine本身是一个极小的Alpine Linux Docker镜像，大小只有5MB。
+
+\begin{lstlisting}[language=]
+REPOSITORY          TAG           IMAGE ID          VIRTUAL SIZE
+gliderlabs/alpine   latest        157314031a17      5.03 MB
+debian              latest        4d6ce913b130      84.98 MB
+ubuntu              latest        b39b81afc8ca      188.3 MB
+centos              latest        8efe422e6104      210 MB
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=bash]
+$ docker run progrium/busybox opkg-install nodejs
+Unknown package 'nodejs'.
+Collected errors:
+* opkg_install_cmd: Cannot install package nodejs.
+
+$ docker run gliderlabs/alpine:latest apk add --no-cache nodejs
+fetch http://alpine.gliderlabs.com/alpine/v3.3/main/x86_64/APKINDEX.tar.gz
+fetch http://alpine.gliderlabs.com/alpine/v3.3/community/x86_64/APKINDEX.tar.gz
+(1/4) Installing libgcc (5.3.0-r0)
+(2/4) Installing libstdc++ (5.3.0-r0)
+(3/4) Installing libuv (1.7.5-r0)
+(4/4) Installing nodejs (4.2.3-r0)
+Executing busybox-1.24.1-r7.trigger
+OK: 29 MiB in 15 packages
+
+$ docker run gliderlabs/alpine:latest apk add --update add nodejs
+fetch http://dl-4.alpinelinux.org/alpine/v3.2/main/x86_64/APKINDEX.tar.gz
+(1/5) Installing c-ares (1.10.0-r1)
+(2/5) Installing libgcc (4.8.3-r0)
+(3/5) Installing libstdc++ (4.8.3-r0)
+(4/5) Installing libuv (0.10.29-r0)
+(5/5) Installing nodejs (0.10.33-r0)
+Executing busybox-1.22.1-r14.trigger
+OK: 21 MiB in 20 packages
+\end{lstlisting}
+
+相比Ubuntu，Alpine可以节省额外的空间占用，例如：
+
+\begin{example}
+向Ubuntu镜像中添加mysql
+\begin{lstlisting}[language=]
+FROM ubuntu-debootstrap:14.04
+RUN apt-get update -q \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -qy mysql-client \
+  && apt-get clean \
+  && rm -rf /var/lib/apt
+ENTRYPOINT ["mysql"]
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+向Alpine镜像中添加MySQL
+\begin{lstlisting}[language=]
+FROM gliderlabs/alpine:3.4
+RUN apk add --no-cache mysql-client
+ENTRYPOINT ["mysql"]
+\end{lstlisting}
+\end{example}
+
