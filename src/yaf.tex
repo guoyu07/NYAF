@@ -576,6 +576,99 @@ yaf.use\_namespace(integer)-如果此值为On，则Yaf的所有类都将在命�
 
 
 
+\section{Exception}
+
+Yaf实现了一套错误和异常捕获机制，主要是对常见的错误处理和异常捕获方法做了一个简单抽象，方便应用组织自己的错误统一处理逻辑。
+
+Yaf自身出错时候，根据配置可以分别采用抛出异常或者触发错误的方式来通知错误。
+
+在appliation.dispatcher.throwException(配置文件, 或者通过Yaf\_Dispatcher::throwException(true))打开的情况下，Yaf会抛异常，否则则会触发错误，那么对应的就有两套错误处理方式可供应用选用。
+
+在application.dispatcher.catchException(配置文件, 或者可通过Yaf\_Dispatcher::catchException(true))开启的情况下，当Yaf遇到未捕获异常的时候，就会把运行权限交给当前模块的Error Controller的Error Action动作，而异常可以作为请求的一个参数传递给Error Action。
+
+在Error Action中可以通过\texttt{\$request->getRequest()->getParam("exception")}获取当前发生的异常。
+
+另外，也可以通过\texttt{\$request->getException()}来获取当前发生的异常，而且如果Error Action定义了一个名为\texttt{\$exception}的参数的话，也可以直接通过这个参数获取当前发生的异常。
+
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会跳转到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 也可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction($exception) {
+        assert($exception === $exception->getCode());
+        $this->getView()->assign("code", $exception->getCode());
+        $this->getView()->assign("message", $exception->getMessage());
+    }
+}
+\end{lstlisting}
+
+通过最终的异常处理逻辑，Yaf应用就可以在出错的时候直接抛出异常，这样就可以在统一的异常处理逻辑中，根据各种不同的异常逻辑来处理错误和记录日志等。
+
+下面是一个常用的Error Action：
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会跳转到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 也可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction($exception) {
+        switch ($exception->getCode()) {
+            case YAF_ERR_LOADFAILD:
+            case YAF_ERR_LOADFAILD_MODULE:
+            case YAF_ERR_LOADFAILD_CONTROLLER:
+            case YAF_ERR_LOADFAILD_ACTION:
+                //404
+                header("Not Found");
+                break;
+
+            case CUSTOM_ERROR_CODE:
+                //自定义的异常
+                //...
+                break;
+        }
+    }
+}
+\end{lstlisting}
+
+下面是一个更为易读的方式：
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会流到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 此时可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction() {
+        $exception = $this->getRequest()->getException();
+        try {
+            throw $exception;
+        } catch (Yaf_Exception_LoadFailed $e) {
+            //加载失败
+        } catch (Yaf_Exception $e) {
+            //其他错误
+        }
+    }
+}
+\end{lstlisting}
+
 
 
 
@@ -7470,17 +7563,29 @@ Yaf_Response_Abstract {
 
 
 
-往已有的响应body后附加新的内容(并返回布尔值)
+往已有的响应body后附加新的内容(并返回布尔值)，\$name参数是保留参数，留空即可。
 
 
 
 \begin{lstlisting}[language=PHP]
-public bool Yaf_Response_Abstract::appendBody ( string $content [, string $key ] )
+public bool Yaf_Response_Abstract::appendBody ( string $body [, string $name ] )
 \end{lstlisting}
 
+成功返回Yaf\_Response\_Abstract, 失败返回FALSE
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->appendBody("Hello World");
+    }
+}
+\end{lstlisting}
+
+
 \begin{compactitem}
-\item \$content - content string
-\item \$key - 响应内容的key，可以设置一个键值对，如果没有具体的设置的话，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
+\item \$body - 要附加的字符串, 一般是一段HTML, 或者是一段JSON(返回给Ajax请求)
+\item \$name - 响应内容的key，可以设置一个键值对，如果没有具体的设置的话，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
 \end{compactitem}
 
 \begin{lstlisting}[language=PHP]
@@ -7496,17 +7601,28 @@ echo $response;
 
 \subsection{Yaf\_Response\_Abstract::clearBody()}
 
-清除已经设置的响应body
-
 \begin{lstlisting}[language=PHP]
 public bool Yaf_Response_Abstract::clearBody ([ string $key ] )
 \end{lstlisting}
+
+清除已经设置的响应body，成功返回Yaf\_Response\_Abstract, 失败返回FALSE。
+
+
 
 \begin{compactitem}
 \item \$key 如果没有具体清除哪个key所对应的内容，那么所有内容将被清除
 \end{compactitem}
 
 
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->clearBody();
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::clearHeaders()}
 
@@ -7542,11 +7658,20 @@ public void Yaf_Response_Abstract::__destruct ( void )
 
 \subsection{Yaf\_Response\_Abstract::getBody()}
 
+\begin{lstlisting}[language=PHP]
+public mixed Yaf_Response_Abstract::getBody ([ string $key ] )
+\end{lstlisting}
+
 获取已经设置的响应body
 
 
 \begin{lstlisting}[language=PHP]
-public mixed Yaf_Response_Abstract::getBody ([ string $key ] )
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        echo $this->getResponse()->getBody();
+    }
+}
 \end{lstlisting}
 
 \begin{compactitem}
@@ -7554,6 +7679,8 @@ public mixed Yaf_Response_Abstract::getBody ([ string $key ] )
 
 如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY。如果传入一个NULL，所有的内容将会以数组形式被返回。
 \end{compactitem}
+
+成功返回已设置的body值, 失败返回NULL
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -7586,18 +7713,29 @@ public void Yaf_Response_Abstract::getHeader ( void )
 
 \subsection{Yaf\_Response\_Abstruct::prependBody()}
 
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Response_Abstract::prependBody ( string $body [, string $key ] )
+\end{lstlisting}
+
 往已有的响应body前插入新的内容并返回bool值。
 
 \begin{lstlisting}[language=PHP]
-public bool Yaf_Response_Abstract::prependBody ( string $content [, string $key ] )
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->prependBody("Hello World");
+    }
+}
 \end{lstlisting}
 
 \begin{compactitem}
-\item \$body - content string
+\item \$body - 要插入的字符串, 一般是一段HTML, 或者是一段JSON(返回给Ajax请求)
 \item \$key - body所对应的key。
 
 可以设置一个body的键值对，如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
 \end{compactitem}
+
+成功返回Yaf\_Response\_Abstract, 失败返回FALSE
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -7611,12 +7749,14 @@ echo $response;
 
 \subsection{Yaf\_Response\_Abstract::response()}
 
-发送响应
-
-
 \begin{lstlisting}[language=PHP]
 public void Yaf_Response_Abstract::response ( void )
 \end{lstlisting}
+
+发送响应。
+
+
+
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -7627,7 +7767,17 @@ $response->response();
 // Hello World
 \end{lstlisting}
 
+成功返回TRUE，失败返回FALSE。
 
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->response();
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_Response\_Abstract::setAllHeaders()}
 
@@ -7729,8 +7879,28 @@ $response->response();
 public void Yaf_Response_Abstract::setRedirect ( void )
 \end{lstlisting}
 
+重定向请求到新的路径，而且和Yaf\_Controller\_Abstract::forward()不同, 这个重定向是HTTP 301重定向。
+
+
+\begin{compactitem}
+\item \$url - 要重定向到的URL
+\end{compactitem}
+
+成功返回Yaf\_Response\_Abstract, 失败返回FALSE
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->setRedirect("http://domain.com/");
+    }
+}
+\end{lstlisting}
+
+
 \subsection{Yaf\_Response\_Abstract::\_\_toString()}
 
+魔术方法，返回Yaf\_Response\_Abstract中的body值。
 
 \begin{lstlisting}[language=PHP]
 private void Yaf_Response_Abstract::__toString ( void )
@@ -7866,6 +8036,10 @@ Yaf_Response_Cli extends Yaf_Response_Abstract {
 \chapter{Yaf\_Route\_Interface}
 
 Yaf\_Route\_Interface是Yaf路由协议的标准接口, 它的存在使得用户可以自定义路由协议。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Route\_Interface。
+
+
 
 \section{Synopsis}
 
@@ -8574,7 +8748,7 @@ public bool Yaf_Route_Rewrite::route ( Yaf_Request_Abstract $request )
 
 \chapter{Yaf\_Router}
 
-Yaf\_Router是标准的框架路由。
+Yaf\_Router是标准的框架路由，负责分析请求中的request uri，并得出目标模板、控制器和动作等。
 
 
 \section{Synopsis}
@@ -8708,10 +8882,16 @@ http://example/blog/archive/list/sort/alpha/date/desc
 \section{Property}
 
 
-\subsection{\$\_route}
+\subsection{\$\_routes}
+
+路由器已有的路由协议栈, 默认的栈底总是名为\texttt{"default"}的Yaf\_Route\_Static路由协议的实例。
+
+
 
 
 \subsection{\$\_current}
+
+在路由成功后, 路由生效的路由协议名
 
 
 \section{Method}
@@ -8719,20 +8899,60 @@ http://example/blog/archive/list/sort/alpha/date/desc
 
 \subsection{Yaf\_Router::addConfig()}
 
-
-向Router中添加配置文件中定义的路由
-
-
-
-
-
-
-
 \begin{lstlisting}[language=PHP]
 public void Yaf_Router::addConfig ( Yaf_Config_Abstract $config )
 \end{lstlisting}
 
-将application.ini中定义的路由规则添加到Yaf\_Router的路由栈中
+向Router中添加配置文件中定义的路由。
+
+
+\begin{compactitem}
+\item \$config - 一个Yaf\_Config\_Abstract的实例, 它包含了一簇路由协议的定义。
+\end{compactitem}
+
+
+\begin{example}
+INI路由协议簇的示例
+\begin{lstlisting}[language=PHP]
+;ini配置文件
+[product]
+routes.regex.type="regex"
+routes.regex.route="#^list/([^/]*)/([^/]*)#"
+routes.regex.default.controller=Index
+routes.regex.default.action=action
+routes.regex.map.1=name
+routes.regex.map.2=value
+
+routes.simple.type="simple"
+routes.simple.controller=c
+routes.simple.module=m
+routes.simple.action=a
+
+routes.supervar.type="supervar"
+routes.supervar.varname=r
+
+routes.rewrite.type="rewrite"
+routes.rewrite.route="/product/:name/:value"
+routes.rewrite.default.controller=product
+routes.rewrite.default.action=info
+\end{lstlisting}
+\end{example}
+
+
+
+将application.ini中定义的路由规则添加到Yaf\_Router的路由栈中，成功返回Yaf\_Config, 失败返回FALSE, 并抛出异常(或者触发错误)。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = Yaf_Dispatcher::getInstance()->getRouter();
+        $router->addConfig(Yaf_Registry::get("config")->routes);
+    }
+}
+\end{lstlisting}
+
+
 
 下面是一个在application.ini中定义的路由规则示例：
 
@@ -8796,11 +9016,37 @@ class Bootstrap extends Yaf_Bootstrap_Abstract {
 
 \subsection{Yaf\_Router::addRoute()}
 
-往Router中添加新的路由
+往Router中添加新的路由，成功返回Yaf\_Router, 失败返回FALSE, 并抛出异常(或者触发错误)。
 
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Router Yaf_Router::addRoute ( string $name , Yaf_Route_Abstract $route )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name - 要增加的路由协议的名字
+
+\item \$route - 要增加的路由协议（Yaf\_Route\_Interface的一个实例）
+
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        /**
+         * 添加一个路由
+         */
+        $route = new Yaf_Route_Rewrite(
+            "/product/list/:id/",
+            array(
+                "controller" => "product",
+                "action" => "info",
+            )
+        );
+        $router->addRoute('dummy', $route);
+    }
+}
 \end{lstlisting}
 
 
@@ -8870,11 +9116,22 @@ public Yaf_Router::__construct ( void )
 
 \subsection{Yaf\_Router::getCurrentRoute()}
 
-取得当前有效的路由的名字
+在路由结束以后，获取当前路由匹配成功并生效的路由协议的名字。
 
 
 \begin{lstlisting}[language=PHP]
 public string Yaf_Router::getCurrentRoute ( void )
+\end{lstlisting}
+
+成功返回生效的路由协议名, 失败返回NULL
+
+\begin{lstlisting}[language=PHP]
+<?php
+class UserPlugin extends Yaf_Plugin_Abstract {
+    public function routerShutdown(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "生效的路由协议是:" . Yaf_Dispatcher::getInstance()->getRouter()->getCurrentRoute();
+    }
+}
 \end{lstlisting}
 
 获取当前路由进程中正在起作用的路由名，开发者需要在路由进程结束之后调用此方法，在这之前，这个方法会一直返回NULL。
@@ -8955,27 +9212,69 @@ string(8) "_default"
 
 \subsection{Yaf\_Router::getRoute()}
 
+获取当前路由器的路由协议栈中名为\$name的协议
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Router::getRoute ( string $name )
 \end{lstlisting}
 
+成功返回目的路由协议, 失败返回NULL
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 路由器中永远都存在一个名为default的Yaf_Route_Static路由协议实例
+ */
+$routes = Yaf_Dispatcher::getInstance()->getRouter()->getRoute('default');
+\end{lstlisting}
+
 
 \subsection{Yaf\_Router::getRoutes()}
-
-
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Router::getRoutes ( void )
 \end{lstlisting}
 
+
+获取当前路由器中的所有路由协议，成功返回当前路由器的路由协议栈内容, 失败返回FALSE。
+
+\begin{lstlisting}[language=PHP]
+<?php
+$routes = Yaf_Dispatcher::getInstance()->getRouter()->getRoutes();
+\end{lstlisting}
+
 \subsection{Yaf\_Router::route()}
 
+路由一个请求, 本方法不需要主动调用, Yaf\_Dispatcher::dispatch()会自动调用本方法。
 
 \begin{lstlisting}[language=PHP]
 public bool Yaf_Router::route ( Yaf_Request_Abstract $request )
 \end{lstlisting}
 
+成功返回TRUE, 失败返回FALSE
+
+\begin{compactitem}
+\item \$request - 一个Yaf\_Request\_Abstract实例
+\end{compactitem}
+
+
+
+
+\subsection{Yaf\_Router::isModuleName()}
+
+（已废弃）判断一个Module名, 是否是申明存在的Module（如果是返回TRUE, 不是返回FALSE）
+
+\begin{lstlisting}[language=PHP]
+public boolean Yaf_Router::isModuleName( string  $name );
+\end{lstlisting}
+
+通过application.modules在配置文件中申明加载的模块名列表
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$routes = Yaf_Dispatcher::getInstance()->isModuleNamer("Index");
+\end{lstlisting}
 
 \chapter{Yaf\_Route\_Simple}
 
@@ -9657,109 +9956,26 @@ private void Yaf_Session::__wakeup ( void )
 
 \chapter{Yaf\_Exception}
 
-Yaf实现了一套错误和异常捕获机制，主要是对常见的错误处理和异常捕获方法做了一个简单抽象，方便应用组织自己的错误统一处理逻辑。
+Yaf\_Exception是Yaf使用的异常类型, 它继承自Exception, 并实现了异常链。
 
-Yaf自身出错时候，根据配置可以分别采用抛出异常或者触发错误的方式来通知错误。
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Exception。
 
-在appliation.dispatcher.throwException(配置文件, 或者通过Yaf\_Dispatcher::throwException(true))打开的情况下，Yaf会抛异常，否则则会触发错误，那么对应的就有两套错误处理方式可供应用选用。
-
-在application.dispatcher.catchException(配置文件, 或者可通过Yaf\_Dispatcher::catchException(true))开启的情况下，当Yaf遇到未捕获异常的时候，就会把运行权限交给当前模块的Error Controller的Error Action动作，而异常可以作为请求的一个参数传递给Error Action。
-
-在Error Action中可以通过\texttt{\$request->getRequest()->getParam("exception")}获取当前发生的异常。
-
-另外，也可以通过\texttt{\$request->getException()}来获取当前发生的异常，而且如果Error Action定义了一个名为\texttt{\$exception}的参数的话，也可以直接通过这个参数获取当前发生的异常。
-
-
-
-
-\begin{lstlisting}[language=PHP]
-<?php
-/**
- * 当有未捕获的异常, 则控制流会跳转到这里
- */
-class ErrorController extends Yaf_Controller_Abstract {
-    /**
-     * 也可通过$request->getException()获取到发生的异常
-     */
-    public function errorAction($exception) {
-        assert($exception === $exception->getCode());
-        $this->getView()->assign("code", $exception->getCode());
-        $this->getView()->assign("message", $exception->getMessage());
-    }
-}
-\end{lstlisting}
-
-通过最终的异常处理逻辑，Yaf应用就可以在出错的时候直接抛出异常，这样就可以在统一的异常处理逻辑中，根据各种不同的异常逻辑来处理错误和记录日志等。
-
-下面是一个常用的Error Action：
-
-
-\begin{lstlisting}[language=PHP]
-<?php
-/**
- * 当有未捕获的异常, 则控制流会跳转到这里
- */
-class ErrorController extends Yaf_Controller_Abstract {
-    /**
-     * 也可通过$request->getException()获取到发生的异常
-     */
-    public function errorAction($exception) {
-        switch ($exception->getCode()) {
-            case YAF_ERR_LOADFAILD:
-            case YAF_ERR_LOADFAILD_MODULE:
-            case YAF_ERR_LOADFAILD_CONTROLLER:
-            case YAF_ERR_LOADFAILD_ACTION:
-                //404
-                header("Not Found");
-                break;
-
-            case CUSTOM_ERROR_CODE:
-                //自定义的异常
-                //...
-                break;
-        }
-    }
-}
-\end{lstlisting}
-
-下面是一个更为易读的方式：
-
-
-
-\begin{lstlisting}[language=PHP]
-<?php
-/**
- * 当有未捕获的异常, 则控制流会流到这里
- */
-class ErrorController extends Yaf_Controller_Abstract {
-    /**
-     * 此时可通过$request->getException()获取到发生的异常
-     */
-    public function errorAction() {
-        $exception = $this->getRequest()->getException();
-        try {
-            throw $exception;
-        } catch (Yaf_Exception_LoadFailed $e) {
-            //加载失败
-        } catch (Yaf_Exception $e) {
-            //其他错误
-        }
-    }
-}
-\end{lstlisting}
+只有在yaf.throw\_exception(php.ini)或者yaf.throwException(配置文件)开启的情况下, Yaf才会抛出异常, 否则Yaf在出错的时候将trigger\_error, 这种情况下, 可以使用Yaf\_Dispatcher::setErrorHandler来捕获错误.
 
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception extends Exception {
+Yaf_Exception extends Exception implements Throwable {
     /* 属性 */
-    protected $message ;
-    protected $code ;
-    protected $previous ;
+    protected $file;
+    protected $line;
+    protected $message;
+    protected $code;
+    protected $previous;
     /* 方法 */
-    public __construct ( void )
+    public __construct ([$message[,$code[,$previous]]] )
     public void getPrevious ( void )
     /* 继承的方法 */
     final public string Exception::getMessage ( void )
@@ -9769,6 +9985,7 @@ Yaf_Exception extends Exception {
     final public int Exception::getLine ( void )
     final public array Exception::getTrace ( void )
     final public string Exception::getTraceAsString ( void )
+    public __wakeup();
     public string Exception::__toString ( void )
     final private void Exception::__clone ( void )
 }
@@ -9779,9 +9996,11 @@ Yaf_Exception extends Exception {
 
 \subsection{\$message}
 
+异常信息
 
 \subsection{\$code}
 
+异常代码
 
 \subsection{\$file}
 
@@ -9791,7 +10010,7 @@ Yaf_Exception extends Exception {
 
 \subsection{\$previous}
 
-
+上一个异常。
 
 \section{Method}
 
@@ -9817,12 +10036,15 @@ public void Yaf_Exception::getPrevious ( void )
 
 \chapter{Yaf\_Exception\_TypeError}
 
+继承自Yaf\_Exception, 在关键逻辑参数出错的时候抛出
+
+在打开yaf.use\_namespace的情况下, 也可以使用 Yaf\textbackslash Exception\textbackslash TypeError。
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_TypeError extends Yaf_Exception {
+Yaf_Exception_TypeError extends Yaf_Exception implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9834,12 +10056,17 @@ Yaf_Exception_TypeError extends Yaf_Exception {
 
 \chapter{Yaf\_Exception\_StartupError}
 
+继承自Yaf\_Exception, 在Yaf启动失败的时候抛出.
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Exception\textbackslash StartupError。
+
+
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_StartupError extends Yaf_Exception {
+Yaf_Exception_StartupError extends Yaf_Exception implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9851,12 +10078,15 @@ Yaf_Exception_StartupError extends Yaf_Exception {
 
 \chapter{Yaf\_Exception\_DispatchFailed}
 
+继承自Yaf\_Exception, 在分发失败的时候抛出。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Exception\textbackslash DispatchFailed。
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_DispatchFailed extends Yaf_Exception {
+Yaf_Exception_DispatchFailed extends Yaf_Exception implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9867,11 +10097,14 @@ Yaf_Exception_DispatchFailed extends Yaf_Exception {
 
 \chapter{Yaf\_Exception\_RouterFailed}
 
+继承自Yaf\_Exception, 在路由失败的时候抛出.
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Exception\textbackslash RouterFailed。
 
 \section{Synopsis}
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_RouterFailed extends Yaf_Exception {
+Yaf_Exception_RouterFailed extends Yaf_Exception implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9882,12 +10115,15 @@ Yaf_Exception_RouterFailed extends Yaf_Exception {
 
 \chapter{Yaf\_Exception\_LoadFailed}
 
+继承自Yaf\_Exception, 在加载需要的类失败的时候抛出.
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Exception\textbackslash LoadFailed。
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_LoadFailed extends Yaf_Exception {
+Yaf_Exception_LoadFailed extends Yaf_Exception implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9898,12 +10134,16 @@ Yaf_Exception_LoadFailed extends Yaf_Exception {
 
 \chapter{Yaf\_Exception\_LoadFailed\_Module}
 
+继承自Yaf\_Exception\_LoadFailed, 在找不到路由指定的模块时抛出
+
+在打开yaf.use\_namespace的情况下, 也可以使用 Yaf\textbackslash Exception\textbackslash LoadFailed\textbackslash Module。
+
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_LoadFailed_Module extends Yaf_Exception_LoadFailed {
+Yaf_Exception_LoadFailed_Module extends Yaf_Exception_LoadFailed implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9915,11 +10155,16 @@ Yaf_Exception_LoadFailed_Module extends Yaf_Exception_LoadFailed {
 \chapter{Yaf\_Exception\_LoadFailed\_Controller}
 
 
+继承自Yaf\_Exception\_LoadFailed, 在找不到路由指定的控制器时抛出
+
+在打开yaf.use\_namespace的情况下, 也可以使用 Yaf\textbackslash Exception\textbackslash LoadFailed\textbackslash Controller。
+
+
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_LoadFailed_Controller extends Yaf_Exception_LoadFailed {
+Yaf_Exception_LoadFailed_Controller extends Yaf_Exception_LoadFailed implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
@@ -9930,10 +10175,14 @@ Yaf_Exception_LoadFailed_Controller extends Yaf_Exception_LoadFailed {
 
 \chapter{Yaf\_Exception\_LoadFailed\_Action}
 
+继承自Yaf\_Exception\_LoadFailed, 在找不到路由指定的动作时抛出
+
+在打开yaf.use\_namespace的情况下, 也可以使用 Yaf\textbackslash Exception\textbackslash LoadFailed\textbackslash Action。
+
 \section{Synopsis}
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_LoadFailed_Action extends Yaf_Exception_LoadFailed {
+Yaf_Exception_LoadFailed_Action extends Yaf_Exception_LoadFailed implements Throwable {
      /* 属性 */
      /* 方法 */
      /* 继承的方法 */
@@ -9944,12 +10193,15 @@ Yaf_Exception_LoadFailed_Action extends Yaf_Exception_LoadFailed {
 
 \chapter{Yaf\_Exception\_LoadFailed\_View}
 
+继承自Yaf\_Exception\_LoadFailed, 在找不到指定的视图模板文件时抛出
+
+在打开yaf.use\_namespace的情况下, 也可以使用 Yaf\textbackslash Exception\textbackslash LoadFailed\textbackslash View。
 
 \section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
-Yaf_Exception_LoadFailed_View extends Yaf_Exception_LoadFailed {
+Yaf_Exception_LoadFailed_View extends Yaf_Exception_LoadFailed implements Throwable {
     /* 属性 */
     /* 方法 */
     /* 继承的方法 */
