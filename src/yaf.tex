@@ -403,7 +403,9 @@ $app->bootstrap() // call bootstrap methods defined in Bootstrap.php
 \end{example}
 
 
+Yaf\_Application代表一个产品/项目，是Yaf运行的主导者，真正执行的主体，因此在入口脚本中会创建Yaf\_Application的一个单例。
 
+具体来说，Yaf\_Application负责接收请求，协调路由，分发，执行并输出，而且打开yaf.use\_namespace的情况下还可以使用 Yaf\_Application.
 
 
 \section{Constant}
@@ -926,6 +928,54 @@ Yaf提供了完善的API并且支持Bootstrap和插件机制，其整体流程�
 \end{figure}
 
 
+\chapter{Yaf Hook}
+
+
+Yaf定义了6个Hook，分别是routerStartup、routerShutdown、dispatchLoopStartup、preDispatch、postDispatch和dispatchLoopShutdown。
+
+
+\zihao{6}
+\begin{longtable}{|m{40pt}|m{80pt}|m{80pt}|m{160pt}|}
+%head
+\multicolumn{4}{r}{}
+\tabularnewline\hline
+触发顺序&Hook名称&触发时机&说明
+\endhead
+%endhead
+
+%firsthead
+\caption{Yaf Hook}\\
+\hline
+触发顺序&Hook名称&触发时机&说明
+\endfirsthead
+%endfirsthead
+
+%foot
+\multicolumn{4}{r}{}
+\endfoot
+%endfoot
+
+%lastfoot
+\endlastfoot
+%endlastfoot
+\hline
+1& routerStartup&在路由之前触发&routerStartup是7个事件中最早的一个，但是一些全局自定义的操作还是应该放在Bootstrap中完成。\\
+\hline
+2&routerShutdown&在路由结束后触发&要求此时路由一定必须正确完成，否则这个事件不会被触发\\
+\hline
+3&dispatchLoopStartup&分发循环开始之前被触发&\\
+\hline
+4&preDispatch&分发之前触发&如果在一个请求处理过程中发生了forward，那么这个事件会被触发多次\\
+\hline
+5&postDispatch&分发结束之后触发&此时动作已经执行结束，视图也已经渲染完成，而且和preDispatch类似，这个事件也可能被触发多次\\
+\hline
+6&dispatchLoopShutDown&分发循环结束之后触发&此时表示所有的业务逻辑都已经运行完成，但是响应还没有发送。\\
+\hline
+\end{longtable}
+\zihao{5}
+
+
+
 \chapter{Yaf Environment}
 
 
@@ -941,8 +991,16 @@ Yaf和用户共用一个配置空间, 也就是在Yaf\_Application初始化时�
 
 Yaf通过在不同的环境中, 选取不同的配置节, 再结合配置可继承, 来实现一套配置适应多种环境（线上、测试和开发）。
 
+\chapter{Yaf Namespace}
 
-\chapter{Yaf\_Class}
+Yaf\_Loader 类为Yaf提供了自动加载(autoload)功能的全面解决方案，这样Yaf就可以根据类名中包含的路径信息实现类的定位和自动加载。
+
+在打开yaf.use\_namespace的情况下，可以使用名字空间。例如，Yaf\_Loader在名字空间中是Yaf\textbackslash Loader。
+
+
+
+
+\chapter{Yaf Class}
 
 
 Yaf的类的加载规则都是一样的——Yaf规定类名中必须包含路径信息，也就是以下划线\texttt{"\_"}分割的目录信息，Yaf将依照类名中的目录信息来完成自动加载。
@@ -981,35 +1039,7 @@ Yaf按照本地类库路径查找类Foo\_Dummy\_Bar
 
 
 
-\begin{example}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-\end{example}
-
-
-
-\begin{example}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-\end{example}
-
-
-
-\begin{example}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-\end{example}
-
-
-
-
-\chapter{Yaf\_MVC}
+\chapter{Yaf MVC}
 
 MVC（Model-View-Controller）软件架构模式可以把软件系统分为三个基本部分：模型（Model）、视图（View）和控制器（Controller）。
 
@@ -1177,9 +1207,467 @@ Yaf默认模块的视图文件为application/views/index/index.phtml，Yaf提供
 
 除了默认的视图引擎之外，Yaf也支持用户自定义自己的视图引擎（例如Smarty）。
 
+\chapter{Yaf Router}
+
+路由主要负责解析一个请求并且决定哪个module、哪个controller以及哪个action被请求，而且Yaf路由同时还定义自己的方式来实现用户自定义路由，因此路由是MVC模式中的重要组件。
+
+为了方便自定义路由，Yaf采用了一种将路由器和路由协议分离的灵活的模式，也就是一个固定不变的路由器配合各种可自定义的路由协议来实现灵活多变的路由策略。
+
+\section{Router Abstract}
+
+作为一个应用中的路由组件是很重要的，理所当然的路由组件是抽象的，这样允许开发者很容易的设计出符合需求的自定义的路由协议。
+
+虽然默认的路由组件其实足够好了，如果开发者需要一个非标准的路由协议时，仍然可以自定义一个自己的路由协议，无需采用默认的路由协议。
+
+事实上，Yaf路由组件有两个部分：路由器(Yaf\_Router)和路由协议(Yaf\_Route\_Abstract)。
+
+\subsection{Yaf\_Route\_Abstract}
+
+
+路由协议主要负责匹配预先定义好的路由协议，也就是说，虽然只有一个路由器，但是可以有许多路由协议。
+
+\subsection{Yaf\_Router}
+
+
+路由器主要负责管理和运行路由链，并根据路由协议栈倒序依次调用各个路由协议，一直到某一个路由协议返回成功就说明匹配成功。
+
+路由注册的顺序很重要，最后注册的路由协议——最先尝试路由，这就有个陷阱，请注意。
+
+路由的过程发生派发过程的最开始，并且路由解析仅仅发生一次。
+
+路由过程在任何控制器动作(Controller, Action)被派发之前被执行，一旦路由成功，路由器将会把解析出得到的信息传递给请求对象(Yaf\_Request\_Abstract object)，这些信息包括moduel、controller、action、用户params等，然后派发器(Yaf\_Dispatcher)就会按照这些信息派发正确的控制器动作。
+
+路由器也有插件钩子，就是routerStartup和routerShutdown，它们在路由解析前后分别被调用。
+
+
+
+
+\section{HTTP Routing}
+
+\subsection{Yaf\_Router}
+
+默认情况下的路由器是Yaf\_Router，默认使用的路由协议是Yaf\_Route\_Static。
+
+\subsection{Yaf\_Router\_Static}
+
+
+Yaf\_Router\_Static是基于HTTP路由的，它期望一个请求是HTTP请求并且请求对象是使用Yaf\_Request\_Http。
+
+
+
+
+
+\section{URL Routing}
+
+使用路由既可以很复杂，同时也能很简单，主要视应用而定。
+
+配置一个基本的路由是很简单的，只要添加用户自己的路由协议给路由器即可，不同的路由协议如下所示：
+
+\begin{compactitem}
+\item Yaf\_Route\_Simple
+\item Yaf\_Route\_Supervar
+\item Yaf\_Route\_Static
+\item Yaf\_Route\_Map
+\item Yaf\_Route\_Rewrite
+\item Yaf\_Route\_Regex
+\end{compactitem}
+
+
+首先来看路由器是如何让路由协议与之一起工作的，在用户添加任何路由协议之前必须要得到一个路由器(Yaf\_Router)实例，可以通过派发器的getRouter方法来得到默认的路由器：
+
+
+
+
+
+\begin{example}
+通过派遣器得到默认的路由器
+\begin{lstlisting}[language=PHP]
+<?php
+$router = Yaf_Dispatcher::getInstance()->getRouter();
+\end{lstlisting}
+\end{example}
+
+
+在得到路由器实例就可以向其添加自定义的一些路由协议，例如：
+
+\begin{example}
+添加自定义路由协议
+\begin{lstlisting}[language=PHP]
+<?php
+$router = Yaf_Dispatcher::getInstance()->getRouter();
+$router->addRoute('myRoute',$route);
+$router->addRoute('myRoute1',$route);
+\end{lstlisting}
+\end{example}
+
+除此之外，还可以直接在配置中定义自己的路由协议，例如
+
+
+
+\begin{example}
+在配置中定义自己的路由协议
+\begin{lstlisting}[language=PHP]
+[common]
+; 自定义路由，注意顺序很重要
+routes.regex.type = 'regex'
+routes.regex.match = '#^/list/([^/]*)/([^/]*)$#'''
+routes.regex.route.controller = Index
+routes.regex.route.action = action
+routes.regex.map.1 = name
+routes.regex.map.2 = value
+; 添加一个名字为simple的路由协议
+routes.simple.type = 'simple'
+routes.simple.controller = c
+routes.simple.module = m
+routes.simple.action = a
+; 添加一个名字为supervar的路由协议
+routes.supervar.type = 'supervar'
+routes.supervar.varname = r
+
+[product : common]
+; product节是Yaf默认关心的节
+; 添加一个名字为rewrite的路由协议
+routes.rewrite.type = 'rewrite'
+routes.rewrite.match = '/product/:name/:value'
+\end{lstlisting}
+\end{example}
+
+路由协议的顺序很重要，Yaf保证添加顺序和在配置文件中的顺序相同。
+
+
+
+\begin{example}
+在Bootstrap中通过调用Yaf\_Router::addConfig添加定义在配置中的路由协议
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = Yaf_Dispatcher::getInstance()->getRouter();
+        // 添加配置文件中的路由
+        $router->addConfig(Yaf_Register::get('config')->routes);
+    }
+}
+\end{lstlisting}
+\end{example}
+
+另外，路由器也可以提供给用户不同的方法来得到和设置包含在它内部的信息，例如一些重要的方法如下：
+
+\begin{compactitem}
+\item getCurrentRoute() - 在路由结束后获取起作用的路由协议
+\item getRoute()
+\item getRoutes()
+\end{compactitem}
+
+\subsection{Yaf\_Route\_Static}
+
+默认的路由协议Yaf\_Route\_Static就是分析请求中的request\_uri，在去除掉base\_uri以后，获取到真正的负载路由信息的request\_uri片段。
+
+具体的策略是, 根据\texttt{"/"}对request\_uri分段, 依次得到Module,Controller,Action, 在得到Module以后, 还需要根据Yaf\_Application::\$modules来判断Module是否是合法的Module, 如果不是, 则认为Module并没有体现在request\_uri中, 而把原Module当做Controller, 原Controller当做Action。
+
+
+\begin{example}
+默认的路由协议Yaf\_Route\_Static
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 对于请求request_uri为"/ap/foo/bar/dummy/1"
+ * base_uri为"/ap"
+ * 则最后参加路由的request_uri为"/foo/bar/dummy/1"
+ * 然后, 通过对URL分段, 得到如下分节
+ * foo, bar, dummy, 1
+ * 然后判断foo是不是一个合法的Module, 如果不是, 则认为结果如下:
+ */
+array(
+    'module' => '默认模块',
+    'controller' => 'foo',
+    'action' => 'bar',
+    'params' => array(
+        'dummy' => 1,
+    )
+);
+
+/**
+ * 而如果在配置文件中定义了ap.modules="Index,Foo",
+ * 则此处就会认为foo是一个合法模块, 则结果如下
+ */
+array(
+    'module' => 'foo',
+    'controller' => 'bar',
+    'action' => 'dummy',
+    'params' => array(
+        1 => NULL,
+    )
+);
+\end{lstlisting}
+\end{example}
+
+当只有一段路由信息的时候，比如对于上面的例子, 请求的URI为/ap/foo，则默认路由和下面要提到的Yaf\_Route\_Supervar会首先判断ap.action\_prefer, 如果为真, 则把foo当做Action, 否则当做Controller。
+
+\subsection{Yaf\_Route\_Simple}
+
+Yaf\_Route\_Simple是基于请求中的query string来做路由的。
+
+在初始化一个Yaf\_Route\_Simple路由协议的时候, 需要给出3个参数，这3个参数分别代表在query string中Module, Controller, Action的变量名。
+
+\begin{example}
+ Yaf\_Route\_Simple
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 指定3个变量名
+ */
+$route = new Yaf_Route_Simple("m", "c", "a");
+$router->addRoute("name", $route);
+/**
+ * 对于如下请求: "http://domain.com/index.php?c=index&a=test
+ * 能得到如下路由结果
+ */
+array(
+    'module' => '默认模块',
+    'controller' => 'index',
+    'action' => 'test',
+);
+     
+\end{lstlisting}
+\end{example}
+
+只有在query string中不包含任何3个参数之一的情况下, Yaf\_Route\_Simple才会返回失败, 将路由权交给下一个路由协议.
+
+\subsection{Yaf\_Route\_Supervar}
+
+Yaf\_Route\_Supervar和Yaf\_Route\_Simple相似, 都是在query string中获取路由信息, 不同的是, 它获取的是一个类似包含整个路由信息的request\_uri。
+
+
+\begin{example}
+Yaf\_Route\_Supervar
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 指定supervar变量名
+ */
+$route = new Yaf_Route_Supervar("r");
+$router->addRoute("name", $route);
+/**
+ * 对于如下请求: "http://domain.com/index.php?r=/a/b/c
+ * 能得到如下路由结果
+ */
+array(
+    'module' => 'a',
+    'controller' => 'b',
+    'action' => 'c',
+)
+\end{lstlisting}
+\end{example}
+
+在query string中不包含supervar变量的时候, Yaf\_Route\_Supervar会返回失败, 将路由权交给下一个路由协议。
+
+\subsection{Yaf\_Route\_Map}
+
+Yaf\_Route\_Map议是一种简单的路由协议, 它将REQUEST\_URI中以\texttt{'/'}分割的节, 组合在一起, 形成一个分层的控制器或者动作的路由结果。
+
+Yaf\_Route\_Map的构造函数接受两个参数，其中：
+
+第一个参数表示路由结果是作为动作的路由结果,还是控制器的路由结果. 默认的是动作路由结果。
+
+第二个参数是一个字符串, 表示一个分隔符, 如果设置了这个分隔符, 那么在REQUEST\_URI中, 分隔符之前的作为路由信息载体, 而之后的作为请求参数。
+
+\begin{example}
+映射路由协议
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 对于请求request_uri为"/ap/foo/bar"
+ * base_uri为"/ap"
+ * 则最后参加路由的request_uri为"/foo/bar"
+ * 然后, 通过对URL分段, 得到如下分节
+ * foo, bar
+ * 组合在一起以后, 得到路由结果foo_bar
+ * 然后根据在构造Yaf_Route_Map的时候, 是否指明了控制器优先,
+ * 如果没有, 则把结果当做是动作的路由结果
+ * 否则, 则认为是控制器的路由结果
+ * 默认的, 控制器优先为FALSE
+ */
+\end{lstlisting}
+\end{example}
+
+
+\subsection{Yaf\_Route\_Rewrite}
+
+Yaf\_Route\_Rewrite是一个强大的路由协议, 它能满足我们绝大部分的路由需求:
+
+
+
+
+\begin{example}
+Yaf\_Route\_Rewrite
+\begin{lstlisting}[language=PHP]
+<?php
+//创建一个路由协议实例
+$route = new Yaf_Route_Rewrite(
+    'product/:ident', 
+    array('controller' => 'products', 'action' => 'view')
+);
+//使用路由器装载路由协议
+$router->addRoute('product', $route);
+\end{lstlisting}
+\end{example}
+
+在这个例子中, 我们试图匹配Url指定到一个单一的产品, 就像\url{http://domain.com/product/choclolat-bar}。
+
+为了实现这点, 我们在路由协议中传递了2个变量到路由协议Yaf\_Route\_Rewrite的构造函数，其中：
+
+第一个变量\texttt{('product/:indent')}就是匹配的路径, 第二个变量(array变量)是路由到的动作控制器。
+
+路径使用一个特别的标识来告诉路由协议如何匹配到路径中的每一个段，这个标识有两种，可以帮助我们创建我们的路由协议，如下所示：
+
+\begin{compactitem}
+\item \texttt{:}
+
+冒号(:)指定了一个段,这个段包含一个变量用于传递到我们动作控制器中的变量,我们要设置好事先的变量名,比如在上面我们的变量名就是\texttt{'ident'},因此倘若访问\url{http://domian.com/product/chocoloate-bar}将会创建一个变量名为ident并且其值是\texttt{'chocoloate-bar'}的变量,然后就可以在动作控制器ProductsController/viewAction下获取到它的值：\texttt{\$this->getRequest()->getParam('ident');}
+
+
+\item \texttt{*}
+
+星号(*)被用做一个通配符, 意思就是在Url中它后面的所有段都将作为一个通配数据被存储. 例如,如果我们有路径\texttt{'path/product/:ident/*'}(就是路由协议中设置的第一个变量), 并且我们访问的Url为\url{http://domain.com/product/chocolate-bar/test/value1/another/value2},那么所有的在\texttt{'chocolate-bar'}后面的段都将被做成变量名/值对,因此这样会给我们下面的结果：
+
+\begin{lstlisting}[language=PHP]
+ident = chocolate-bar
+test = value1
+another = value2
+\end{lstlisting}
+\end{compactitem}
+
+这种行为也就是我们平常默认使用的路由协议的行为,记住变量名/值要成对出现,否则像/test/value1/这样的将不会这种另一个变量,我们有静态的路由协议部分,这些部分简单地被匹配来满足我们的路由协议,在我们的例子中,静态部分就是product，就像现在看到的那样，Yaf\_Route\_Rewrite路由协议提供给我们极大的灵活性来控制我们的路由。
+
+\subsection{Yaf\_Route\_Regex}
+
+基本的路由操作虽然可以满足需求，然而它们会有一些限制，这就是我们为什么要引进正则路由(Yaf\_Route\_Regex)的原因。
+
+正则路由给予Yaf应用程序preg正则的全部力量，同时也使得我们的路由协议变得更加复杂了一些，不过正则路由协议比其他路由协议要灵活一点。
+
+之前的示例改用使用正则路由改写为如下的形式：
+
+\begin{example}
+Yaf\_Route\_Regex
+\begin{lstlisting}[language=PHP]
+<?php
+$route = new Yaf_Route_Regex(
+   'product/([a-zA-Z-_0-9]+)',
+   array(
+        'controller'=>'products',
+        'action' => 'view'
+   )
+);
+$router->addRoute('product',$route);
+\end{lstlisting}
+\end{example}
+
+可以看到，现在移动正则到path(构造函数的第一个参数)中，这个正则路由协议现在应该是匹配是一个数字、字母、-和\_组成的ident变量的字符提供给我们。
+
+但是，你一定会问，ident变量在哪呢？如果使用了这个正则路由协议,我们可以通过变量1(one)来获取其值，即可以在控制器里通过\texttt{\$this->getRequest()->getParam(1)}来获取，其实这里就是反向引用中的\texttt{\textbackslash 1}。
+
+使用正则路由时，无法记住或者弄清每一个数字代表的是什么变量，因此为了改变这点,正则路由协议的构造函数提供了第3个参数来完成数字到变量名的映射，例如：
+
+
+
+
+\begin{example}
+Yaf\_Route\_Regex的构造函数的第三个参数可以完成数字到变量名的映射
+\begin{lstlisting}[language=PHP]
+<?php
+$route = new Yaf_Route_Regex(
+    'product/[a-zA-Z-_0-9]+',
+    array(
+        'controller'=>'products',
+        'action'=>'view'
+   ),
+   array(
+        // 完成数字到字符变量的映射
+        1=>'ident'
+   )
+);
+$router->addRoute('product',$route);
+\end{lstlisting}
+\end{example}
+
+
+上述的示例将变量1映射到了ident变量名,这样就设置了ident变量,同时开发者也可以在控制器里面获取到它的值。
+
+\subsection{Yaf\_Route\_Interface}
+
+这个世界上没有绝对的事情，所以万一现在所有的路由协议都不能满足需求, 那么可以自己实现你自己的路由协议，只要申明自定义路由协议实现了Yaf\_Route\_Interface接口即可。
+
+
+
+\chapter{Yaf Plugin}
+
+Yaf支持用户自己定义插件来扩展Yaf的功能。
+
+Yaf插件本身都是一些类，它们必须继承自Yaf\_Plugin\_Abstract，而且插件必须在Yaf中显式地注册才能发挥功效，才能让Yaf在合适的时机调用插件来发挥作用。
+
+Yaf\_Plugin\_Abstract是Yaf的插件基类，所有的插件类都需要继承自这个基类，而且Yaf\_Plugin\_Abstract定义的7个方法会依次在合适的时机被调用。
+
+对于Yaf插件类来说，不需要全部关心Yaf自己内置的Hook，用户只需要在插件类中定义和Yaf Hook事件同名的方法，那么这个方法就会在该事件触发的时候被调用。
+
+Yaf插件的方法可以接受两个参数——Yaf\_Request\_Abstract的实例和Yaf\_Response\_Abstract的实例。
+
+下面是一个Yaf插件类的例子：
+
+\begin{lstlisting}[language=PHP]
+<?php
+class UserPlugin extends Yaf_Plugin_Abstract {
+    public function routerStartup(Yaf_Request_Abstract $request,Yaf_Response_Abstract $response) {
+    
+    }
+    
+    public function routerShutdown(Yaf_Request_Abstract $request,Yaf_Response_Abstract $response){
+    
+    }
+}
+\end{lstlisting}
+
+在上述的示例中，Yaf插件只关心两个事件，所以就只定义了两个方法。
+
+默认情况下，Yaf插件应该放置在APPLICATION\_PATH下的plugins目录中，这样如果加载器在自动加载过程中发现插件类就会在这个目录下查找。
+
+开发者同样也可以把插件类保存到其他位置，只要可以把这个类加载进来即可。
+
+
+\section{Yaf\_Request\_Abstract}
+
+
+
+\section{Yaf\_Response\_Abstract}
+
+
+
+\section{Yaf\_Bootstrap\_Abstract}
+
+如果需要Yaf插件生效，还需要向Yaf\_Dispatcher注册，因此一般的插件注册都会在Bootstrap中进行。
+
+\begin{example}
+注册插件
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initPlugin(Yaf_Dispatcher $dispatcher){
+         $user = new UserPlugin();
+         $dispacher->registerPlugin($user);
+    }
+}
+\end{lstlisting}
+\end{example}
+
+插件有两种部署方式，一种是部署在plugins目录下，通过名称中的后缀(可通过yaf.name\_suffix和yaf.name\_separator来改变具体命名形式)来使得自动加载器可以正确加载。
+
+另外一种部署插件的方式是放置在类库，由普通加载规则加载，但是无论哪种方式，用户定义的插件都需要继承自Yaf\_Plugin\_Abstract。
+
+
 \chapter{Yaf\_Application}
 
 Yaf\_Application为应用提供了一个辅助设施。
+
+
 
 Yaf\_Application提供了可重用的资源、常见的和模块化的引导类以及依赖检查。
 
@@ -1187,26 +1675,29 @@ Yaf\_Application提供了可重用的资源、常见的和模块化的引导类�
 
 开发者可以使用PHPUnit的@backupGlobals注释来控制全局变量的备份和恢复操作， 从而可以解决上述这个问题。
 
+\section{Synopsis}
 
 
 
 \begin{lstlisting}[language=PHP]
 final Yaf_Application {
   /* 属性 */
-  protected $config ;
-  protected $dispatcher ;
-  protected static $_app ;
-  protected $_modules ;
-  protected $_running ;
-  protected $_environ ;
+  protected Yaf_Config $config ;
+  protected Yaf_Dispatcher $dispatcher ;
+  protected static Yaf_Application $_app ;
+  protected string $_modules ;
+  protected bool $_running = FALSE ;
+  protected string $_environ ;
+  protected int $_err_no;
+  protected string $_err_msg;
   /* 方法 */
   public static void app ( void )
-  public void bootstrap ([ Yaf_Bootstrap_Abstract $bootstrap ] )
+  public Yaf_Application bootstrap ([ Yaf_Bootstrap_Abstract $bootstrap ] )
   public Yaf_Application clearLastError ( void )
   private void __clone ( void )
-  public __construct ( mixed $config [, string $envrion ] )
+  public __construct ( mixed $config [, string $envrion = yaf.environ ] )
   public void __destruct ( void )
-  public void environ ( void )
+  public string environ ( void )
   public void execute ( callable $entry , string $... )
   public Yaf_Application getAppDirectory ( void )
   public Yaf_Config_Abstract getConfig ( void )
@@ -1214,29 +1705,49 @@ final Yaf_Application {
   public string getLastErrorMsg ( void )
   public int getLastErrorNo ( void )
   public array getModules ( void )
-  public void run ( void )
+  public Yaf_Response_Abstract run ( void )
   public Yaf_Application setAppDirectory ( string $directory )
   private void __sleep ( void )
   private void __wakeup ( void )
 }
 \end{lstlisting}
 
+
+
 \section{Property}
 
 
 \subsection{\$config}
+
+全局配置实例。
+
 \subsection{\$dispatcher}
+
+Yaf\_Dispatcher实例。
+
 \subsection{\$\_app}
+
+Yaf\_Application实现了单例模式来保存当前实例。
+
 \subsection{\$\_modules}
+
+已存在的模块名（从配置文件的application.modules读取）。
+
+
 \subsection{\$\_running}
+
+指明当前的Yaf\_Application实例是否已经运行。
+
 \subsection{\$\_environ}
+
+当前的环境名（也就是Yaf\_Application在读取配置时获得的配置节名字）。
 
 \section{Method}
 
 
 \subsection{Yaf\_Application::app()}
 
-Yaf\_Application::app()方法没有参数。
+Yaf\_Application::app()方法没有参数，可以获取当前的Yaf\_Application实例。
 
 \begin{lstlisting}[language=PHP]
 public static void Yaf_Application::app ( void )
@@ -1247,7 +1758,16 @@ public static void Yaf_Application::app ( void )
 也可以使用Yaf\_Dispatcher::getApplication()来得到Yaf\_Application的实例。
 
 
-
+\begin{lstlisting}[language=PHP]
+<?php
+$config = array(
+        "ap" => array(
+                "directory" => "/usr/local/www/ap",
+        ),
+);
+$app = new Yaf_Application($config);
+assert($app === Yaf_Application::app());
+\end{lstlisting}
 
 
 
@@ -1264,7 +1784,9 @@ public static void Yaf_Application::app ( void )
 public void Yaf_Application::bootstrap ([ Yaf_Bootstrap_Abstract $bootstrap ] )
 \end{lstlisting}
 
-具体来说，Yaf\_Application::bootstrap()方法会指示Yaf\_Application去寻找Bootstrap，并按照申明的顺序，执行所有在Bootstrap类中定义的以\_init开头的方法。 如果没有提供变量bootstrap，Yaf默认会去application.directory中寻找Bootstrap。
+具体来说，Yaf\_Application::bootstrap()方法会指示Yaf\_Application去寻找Bootstrap.php（默认为application.directory/Bootstrap.php），并按照申明的顺序，执行所有在Bootstrap类中定义的以\_init开头的方法。 
+
+如果没有提供变量bootstrap，Yaf默认会去application.directory中寻找Bootstrap。
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -1288,13 +1810,15 @@ Yaf\_Application::bootstrap()示例
 \begin{lstlisting}[language=PHP]
 defined('APPLICATION_PATH')  // APPLICATION_PATH will be used in the ini config file
    || define('APPLICATION_PATH', __DIR__); // __DIR__
-$application = new Yaf_Application(APPLICATION_PATH.'/conf/application.ini');
-$application->bootstrap();
+$app = new Yaf_Application(APPLICATION_PATH.'/conf/application.ini');
+$app->bootstrap();
 // 以上例程的输出类似于：
 1st called
 2nd called
 \end{lstlisting}
 \end{example}
+
+Bootstrap类中定义的方法一般用作在处理请求之前，做一些个性化定制。
 
 
 \begin{example}
@@ -1314,6 +1838,10 @@ class Bootstrap extends Yaf_Bootstrap_Abstract
 }
 \end{lstlisting}
 \end{example}
+
+Bootstrap本身不会去调用run()，因此还需要在bootstrap()之后调用Yaf\_Application::run()来运行Yaf\_Application实例，并返回Yaf\_Application实例。
+
+
 
 \subsection{Yaf\_Application::clearLastError()}
 
@@ -1369,16 +1897,18 @@ private void Yaf_Application::__clone ( void )
 
 
 
-\subsection{Yaf\_Application::\_\_construct()}
+\subsection{Yaf\_Application::\_\_construct(mixed \$config,string \$section = yaf.environ)}
 
-构造函数可以初始化一个 Yaf\_Application。
+构造函数可以初始化一个 Yaf\_Application实例，如果传入的\$config是一个INI文件，那么需要在\$section中指明要读取的配置节。
 
 
 
 
 \begin{lstlisting}[language=PHP]
-publicYaf_Application::__construct ( mixed $config [, string $envrion ] )
+public Yaf_Application::__construct ( mixed $config [, string $envrion ] )
 \end{lstlisting}
+
+\$config是一个包含关联数组的配置, 或者是一个指向ini格式的配置文件的路径的字符串，或者是一个Yaf\_Config\_Abstract的实例。
 
 \begin{compactitem}
 \item \$config包含关联数组的配置, 或者一个指向ini格式的配置文件的路径的字符串。
@@ -1390,7 +1920,7 @@ publicYaf_Application::__construct ( mixed $config [, string $envrion ] )
 
 如果是一个ini配置文件，那么配置文件中应该有一个定义了yaf.environ 的配置节，这个在生产环境中是默认的。
 
-如果使用了ini配置文件作为应用配置的容器，需要打开yaf.cache\_config 来提升性能。
+如果使用了ini配置文件作为应用配置的容器，可以打开yaf.cache\_config 来提升性能。
 
 \begin{lstlisting}[language=PHP]
 [product]
@@ -1424,8 +1954,8 @@ ap.modules=Index
 defined('APPLICATION_PATH')                  // APPLICATION_PATH will be used in the ini config file
     || define('APPLICATION_PATH', __DIR__)); //__DIR__ 
 
-$application = new Yaf_Application(APPLICATION_PATH.'/conf/application.ini');
-$application->bootstrap()->run();
+$app = new Yaf_Application(APPLICATION_PATH.'/conf/application.ini');
+$app->bootstrap()->run();
 \end{lstlisting}
 
 向Yaf\_Application传入的配置也可以是一个数组，例如：
@@ -1439,8 +1969,12 @@ $config = array(
 );
 
 /** Yaf_Application */
-$application = new Yaf_Application($config);
-$application->bootstrap()->run();
+$app = new Yaf_Application($config);
+// 输出类似如下：
+// object(Yaf_Application)#1 (6) {
+// ...
+// }
+$app->bootstrap()->run();
 \end{lstlisting}
 
 
@@ -1478,7 +2012,7 @@ public void Yaf_Application::__destruct ( void )
 
 \subsection{Yaf\_Application::environ()}
 
-获取当前Yaf\_Application的环境名（例如product或dev），它被定义在yaf.environ，默认为product。
+获取当前Yaf\_Application的环境名（例如product或dev），它被定义在yaf.environ（相当于\texttt{ini\_get("yaf.environ")}），默认为product。
 
 
 
@@ -1500,8 +2034,8 @@ $config = array(
 );
 
 /** Yaf_Application */
-$application = new Yaf_Application($config);
-print_r($application->environ());
+$app = new Yaf_Application($config);
+print_r($app->environ());
 // 以上例程的输出类似于：
 // product
 \end{lstlisting}
@@ -1526,6 +2060,13 @@ print_r($application->environ());
 public void Yaf_Application::execute ( callable $entry , string $... )
 \end{lstlisting}
 
+或者
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Application::execute ( callable $entry ,  mixed  $parameter = NULL,$parameter  $... = NULL )
+\end{lstlisting}
+
+
 execute()方法通常用于在cron任务中运行Yaf\_Application，而且在cron任务中也可以使用autoloader和Bootstrap机制。
 
 \begin{compactitem}
@@ -1546,11 +2087,17 @@ $config = array(
     ),
 );
 /* Yaf_Application */
-$application = new Yaf_Application($config);
-$application->execute("main", $argc,  $argv);
+$app = new Yaf_Application($config);
+$app->execute("main", $argc,  $argv);
 \end{lstlisting}
 
+在Yaf\_Application的环境下, execute()可以运行一个用户自定义函数过程，主要用在使用Yaf做简单的命令行脚本的时候应用Yaf的外围环境（例如自动加载、配置和视图引擎等）。
 
+如果需要使用Yaf的路由分发，也就是说如果是需要在CLI下全功能运行Yaf，则需要进行手动进行路由派发。
+
+\texttt{\$entry}是要运行的函数或方法，可以通过\texttt{array(\$obj,"method\_name")}来定义。
+
+execute()允许传入一个或多个要传递给函数的参数，而且execute()可以把被调用函数或者方法的返回值的返回给调用方。
 
 \begin{lstlisting}[language=PHP]
 
@@ -1585,7 +2132,7 @@ public Yaf_Application Yaf_Application::getAppDirectory ( void )
 
 \subsection{Yaf\_Application::getConfig()}
 
-获取Yaf\_Config\_Abstract的实例。
+获取Yaf\_Config\_Abstract的实例（也就是Yaf\_Application读取的配置项）。
 
 
 
@@ -1607,8 +2154,8 @@ $config = array(
 );
 
 /** Yaf_Application */
-$application = new Yaf_Application($config);
-print_r($application->getConfig());
+$app = new Yaf_Application($config);
+print_r($app->getConfig());
 // 以上例程的输出类似于：
 // Yaf_Config_Simple Object
 // (
@@ -1632,7 +2179,7 @@ print_r($application->getConfig());
 
 \subsection{Yaf\_Application::getDispatcher()}
 
-获取Yaf\_Dispatcher的实例。
+获取当前Yaf\_Dispatcher的实例（派发器实例）。
 
 
 
@@ -1650,8 +2197,8 @@ $config = array(
 );
 
 /** Yaf_Application */
-$application = new Yaf_Application($config);
-print_r($application->getDispatcher());
+$app = new Yaf_Application($config);
+print_r($app->getDispatcher());
 // 以上例程的输出类似于：
 // Yaf_Dispatcher Object
 // (
@@ -1700,6 +2247,12 @@ print_r($application->getDispatcher());
 //             [_sendheader:protected] => 
 //         )
 // )
+
+// 可以继续设置Bootstrap并执行相关设置
+$app->getDispatcher()->setAppDirectory(APPLICATION_PATH."/action/")->getApplication()->bootstrap()->run();
+
+// 或者，可以通过派发器进行相关设置
+$dispatcher = Yaf_Dispatcher::getInstance()->setAppDirectory(APPLICATION_PATH."/action/")->getApplication()->bootstrap()->run();
 \end{lstlisting}
 
 
@@ -1814,8 +2367,8 @@ $config = array(
 );
 
 /** Yaf_Application */
-$application = new Yaf_Application($config);
-print_r($application->getModules());
+$app = new Yaf_Application($config);
+print_r($app->getModules());
 // 以上例程的输出类似于：
 // Array
 // (
@@ -1838,7 +2391,18 @@ public void Yaf_Application::run ( void )
 
 具体来说，run()方法运行一个Yaf\_Application，开始接受并处理请求、分发路由并做出相应的响应，最终将响应返回给客户端。
 
+run()方法只能调用一次，多次调用并不会有特殊效果。
 
+\begin{lstlisting}[language=PHP]
+<?php
+$config = array(
+        "application" => array(
+                "directory" => "/usr/local/www/yaf",
+        ),
+);
+$app = new Yaf_Application($config);
+$app->run();
+\end{lstlisting}
 
 
 \subsection{Yaf\_Application::setAppDirectory()}
@@ -1929,13 +2493,30 @@ $app->run();
 
 \end{compactitem}
 
+
+
 \chapter{Yaf\_Bootstrap\_Abstract}
 
-Bootstrap是用来在Application运行(run)之前做一些初始化工作的机制，开发者可以通过继承Yaf\_Bootstrap\_Abstract 来定义自己的Bootstrap类。
+Yaf\_Bootstrap\_Abstract提供了一个可以定制Yaf\_Application的最早的时机，它相当于一段引导或入口程序。
+
+Yaf\_Bootstrap\_Abstract本身没有定义任何方法，但是任何继承自Yaf\_Bootstrap\_Abstract的类中的以\_init开头的方法都会在Yaf\_Application::bootstrap()时刻被调用，调用的顺序和这些方法在类中的定义顺序相同，Yaf保证这种调用顺序。
+
+具体来说，Bootstrap是用来在Application运行(run)之前做一些初始化工作的机制，开发者可以通过继承Yaf\_Bootstrap\_Abstract 来定义自己的Bootstrap类。
+
+当bootstrap()方法被调用的时刻，Yaf\_Application就会默认的在APPLICATION\_PATH下寻找Bootstrap.php，开发者也可以通过在配置文件中修改application.bootstrap来变更Bootstrap类的位置。
+
+application.bootstrap(string)-Bootstrap类脚本文件的绝对路径（默认为\$document\_root/application/Bootstrap.php）。
+
+
+在Bootstrap.php中必须定义一个Bootstrap类，而且这个类也必须继承自Yaf\_Bootstrap\_Abstract。
+
+实例化成功之后, 所有在Bootstrap类中定义的，以\_init开头的方法都会被依次调用，而且这些方法都可以接受一个Yaf\_Dispatcher实例作为参数。
 
 在Bootstrap类中所有以``\_init"开头的公有的方法，都会被按照定义顺序依次在Yaf\_Application::bootstrap()方法被调用的时刻进行调用和执行。
 
+Boostrap类中定义的\_init开头的方法都可以接受一个Yaf\_Dispatcher参数。
 
+下面是一个Bootstrap.php的例子。
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -1960,18 +2541,232 @@ $app->bootstrap();
 // string(22) "Bootstrap::_initPlugin"
 \end{lstlisting}
 
+\begin{example}
+Bootstrap按定义顺序执行\_init开头的方法
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+   public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set('config',$config);
+   }
+   
+   public function _initDefaultName(Yaf_Dispatcher $dispatcher){
+        $dispatcher->setDefaultModule('Index')->setDefaultController('Index')->setDefaultAction('index');
+   }
+}
+\end{lstlisting}
+\end{example}
 
 
+方法在Bootstrap类中的定义出现顺序，决定了它们的被调用顺序。例如，对于上面的例子，\_initConfig会第一个被调用。
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 所有在Bootstrap类中, 以_init开头的方法, 都会被Yaf调用,
+ * 这些方法, 都接受一个参数:Yaf_Dispatcher $dispatcher
+ * 调用的次序, 和申明的次序相同
+ */
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    /**
+     * 注册一个插件
+     * 插件的目录是在application_directory/plugins
+     */
+    public function _initPlugin(Yaf_Dispatcher $dispatcher) {
+        $user = new UserPlugin();
+        $dispatcher->registerPlugin($user);
+    }
+
+    /**
+     * 添加配置中的路由
+     */
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = Yaf_Dispatcher::getInstance()->getRouter();
+        $router->addConfig(Yaf_Registry::get("config")->routes);
+        /**
+         * 添加一个路由
+         */
+        $route = new Yaf_Route_Rewrite(
+            "/product/list/:id/",
+            array(
+                "controller" => "product",
+                "action" => "info",
+            )
+        );
+        $router->addRoute('dummy', $route);
+    }
+
+    /**
+     * 自定义视图引擎
+     */
+    public function _initSmarty(Yaf_Dispatcher $dispatcher) {
+        $smarty = new Smarty_Adapter(null, Yaf_Registry::get("config")->get("smarty"));
+        Yaf_Dispatcher::getInstance()->setView($smarty);
+    }
+}
+
+
+//在默认的入口文件index.php中,Yaf_Application将会读取配置文件中在php.ini中设置的application.environ的配置节
+$application = new Yaf_Application("conf/sample.ini");
+
+/* 如果没有关闭自动response(通过Yaf_Dispatcher::getInstance()->autoResponse(FALSE)),
+ * 则$response会被自动输出, 此处也不需要再次输出Response
+ */
+$response = $application->bootstrap()/*实例化Bootstrap, 依次调用Bootstrap中所有_init开头的方法*/
+    ->run();
+\end{lstlisting}
+
+\chapter{Yaf\_Command}
+
+Yaf支持在命令行下运行，以此来方便开发人员调试。
+
+为了让Yaf在命令行模式下运行, 有两种方式，其中：
+
+第一种方式是专门为用Yaf开发Contab等任务脚本设计的方式, 对Yaf的唯一要求就是能自动加载所需要的Model或者类库，所以可以简单的通过Yaf\_Application::execute()来实现。
+
+第二种方式是为了在命令行下模拟请求, 运行和Web请求一样的流程, 从而可以用来在命令行下测试Yaf应用。
+
+\section{Yaf\_Request\_Simple}
+
+
+对于第二种方式, 唯一的关键点就是请求体, 默认的请求是由Yaf\_Application实例化, 并且交给Yaf\_Dispatcher的, 而在命令行模式下, Yaf\_Application并不能正确的实例化一个命令行请求, 所以需要变更一下, 请求需要手动实例化。
+
+\begin{example}
+实例化一个Yaf\_Request\_Simple
+\begin{lstlisting}[language=PHP]
+<?php
+$request = new Yaf_Request_Simple();
+print_r($request);
+\end{lstlisting}
+\end{example}
+
+Yaf\_Request\_Simple类的构造函数最多接受5个可选参数，也可以不接受任何参数。
+
+
+\begin{lstlisting}[language=PHP]
+$ php request.php
+Yaf_Request_Simple Object
+(
+    [module] => 
+    [controller] => 
+    [action] => 
+    [method] => CLI
+    [params:protected] => Array
+        (
+        )
+
+    [language:protected] => 
+    [_exception:protected] => 
+    [_base_uri:protected] => 
+    [uri:protected] => 
+    [dispatched:protected] => 
+    [routed:protected] => 
+)
+\end{lstlisting}
+
+
+
+如果未指定构造函数参数，那么Yaf\_Request\_Simple就会在命令行参数中寻找一个字符串参数，如果找到了就会把请求的request\_uri置为这个字符串。
+
+
+\begin{example}
+向Yaf\_Request\_Simple实例传入命令行参数
+\begin{lstlisting}[language=PHP]
+$ php request.php "request_uir=/index/hello"
+Yaf_Request_Simple Object
+(
+[module] =>
+[controller] =>
+[action] =>
+[method] => CLI
+[params:protected] => Array
+(
+)
+
+[language:protected] =>
+[_base_uri:protected] =>
+[uri:protected] => index/hello  //注意这里
+[dispatched:protected] =>
+[routed:protected] =>
+)
+\end{lstlisting}
+\end{example}
+
+
+
+
+
+也可以完全指定Yaf\_Request\_Simple::\_\_construct()的5个参数，例如：
+
+\begin{example}
+完全指定Yaf\_Request\_Simple::\_\_construct()的5个参数
+\begin{lstlisting}[language=PHP]
+<?php
+$request = new Yaf_Request_Simple("CLI", "Index", "Controller", "Hello", array("para" => 2));
+print_r($requst);
+\end{lstlisting}
+\end{example}
+
+上述示例的输出如下：
+
+\begin{lstlisting}[language=PHP]
+$ php request.php
+Yaf_Request_Simple Object
+(
+[module] => Index
+[controller] => Controller
+[action] => Hello
+[method] => CLI
+[params:protected] => Array
+(
+[para] => 2
+)
+
+[language:protected] =>
+[_base_uri:protected] =>
+[uri:protected] =>
+[dispatched:protected] =>
+[routed:protected] => 1    //注意这里
+)
+\end{lstlisting}
+
+可以看到，一个比较特别的地方就是，routed属性变为了TRUE, 这就代表着如果手动指定了构造函数的参数，那么这个请求不会再经过路由, 而直接是路由完成状态。
+
+在命令行中的请求已经改造完成后接下来还需要把传统的入口文件修改为手动分发请求的模式。
+
+\begin{example}
+Yaf传统的入口文件
+\begin{lstlisting}[language=PHP]
+<?php
+$app = new Yaf_Application("conf.ini");
+$app->bootstrap()->run();
+\end{lstlisting}
+\end{example}
+
+通过手动分发请求可以通过在命令行中运行Yaf。
+
+\begin{example}
+Yaf在命令行中分发请求
+\begin{lstlisting}[language=PHP]
+<?php
+$app = new Yaf_Application("conf.ini");
+$app->getDispatcher()->dispatch(new Yaf_Request_Simple());
+\end{lstlisting}
+\end{example}
 
 
 \chapter{Yaf\_Dispatcher}
 
-Yaf\_Dispatcher用于初始化处理请求的运行环境。
+Yaf\_Dispatcher用于初始化处理请求的运行环境，并实现了MVC中的C分发。
 
-具体来说，Yaf\_Dispatcher类协调路由来的请求，并分发和执行发现的动作，然后收集动作产生的响应，输出响应给请求者，并在整个过程完成以后返回响应。
+Yaf\_Dispatcher由Yaf\_Application负责初始化, 然后由Yaf\_Application::run启动, Yaf\_Dispatcher实例协调路由来的请求，并分发和执行发现的动作，然后收集动作产生的响应，输出响应给请求者，并在整个过程完成以后返回响应。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Dispatcher。
 
 Yaf\_Dispatcher是单例模式运行的，也就是说自始至终只生成一个Yaf\_Dispatcher实例，因此可以把它看成是在分发过程中生成的对象的注册表，可以从中获取到分发过程中产生的对象。
 
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -1992,7 +2787,7 @@ final Yaf_Dispatcher {
   public Yaf_Dispatcher autoRender ( bool $flag )
   public Yaf_Dispatcher catchException ([ bool $flag ] )
   private void __clone ( void )
-  public__construct ( void )
+  private __construct ( void )
   public bool disableView ( void )
   public Yaf_Response_Abstract dispatch ( Yaf_Request_Abstract $request )
   public Yaf_Dispatcher enableView ( void )
@@ -2026,114 +2821,60 @@ final Yaf_Dispatcher {
 
 \subsection{\$\_router}
 
+当前的路由器，而且随着路由器和路由协议的分离, 各种路由都可以通过配置路由协议来实现, 也就取消了自定义路由器的功能。
+
 \subsection{\$\_view}
+
+当前的视图引擎, 可以通过Yaf\_Dispatcher::setView来替换视图引擎为自定义视图引擎(比如Smary/Firekylin等常见引擎)
+
 \subsection{\$\_request}
+
+当前请求
+
 \subsection{\$\_plugins}
+
+已经注册的插件, 插件一经注册, 就不能更改和删除
+
 \subsection{\$\_instance}
+
+Yaf\_Dispatcher实现了单例模式，此属性保存当前实例。
+
 \subsection{\$\_auto\_render}
+
+是否在动作执行完成后, 调用视图引擎的render方法, 产生响应. 可以通过Yaf\_Dispatcher::disableView和Yaf\_Dispatcher::enableView来切换开关状态。
+
 \subsection{\$\_return\_response}
+
+是否在产生响应以后, 不自动输出给客户端, 而是返回给调用者. 可以通过Yaf\_Dispatcher::returnResponse来切换开关状态。
+
+
 \subsection{\$\_instantly\_flush}
+
+是否在有输出的时候, 直接响应给客户端, 不写入Yaf\_Response\_Abstract对象。
+
+如果\$\_instantly\_flush属性为TRUE, 那么将忽略Yaf\_Dispatcher::\$\_return\_response。
+
+
+
+
 \subsection{\$\_default\_module}
+
+默认的模块名。
+
+在路由的时候, 如果没有指明模块, 则会使用这个值, 也可以通过配置文件中的ap.dispatcher.defaultModule来指定。
+
+
 \subsection{\$\_default\_controller}
+
+默认的控制器名。
+
+在路由的时候, 如果没有指明控制器, 则会使用这个值, 也可以通过配置文件中的ap.dispatcher.defaultController来指定
+
 \subsection{\$\_default\_action}
 
+默认的动作名, 在路由的时候, 如果没有指明动作, 则会使用这个值, 也可以通过配置文件中的ap.dispatcher.defaultAction来指定。
 
 
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
 
 \section{Method}
 
@@ -2167,20 +2908,35 @@ class IndexController extends Yaf_Controller_Abstract {
 
 
 
-\begin{lstlisting}[language=PHP]
 
-\end{lstlisting}
 
 \subsection{Yaf\_Dispatcher::catchException()}
 
-开启/关闭自动异常捕获功能（接受bool型参数）
+在开启抛出异常的状态下，开启/关闭自动异常捕获功能（接受bool型参数）
 
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::catchException ([ bool $flag ] )
 \end{lstlisting}
 
-当 application.dispatcher.throwException 开启的时候（也可以通过调用 Yaf\_Dispatcher::throwException(TRUE)() 来开启它），Yaf将会抛出异常而不是触发异常发生。
+在application.dispatcher.throwException 开启的时候（也可以通过调用 Yaf\_Dispatcher::throwException(TRUE)() 来开启它）：
+
+\begin{lstlisting}[language=PHP]
+<?php
+$app = new Yaf_Application("conf.ini");
+/**
+ * 开启捕获异常
+ */
+Yaf_Dispatcher::getInstance()->catchException(TRUE);
+\end{lstlisting}
+
+\begin{compactitem}
+\item 如果\$flag为TRUE，则会在有未捕获的异常时，由Error Controller的Error Action处理。
+\item 如果\$flag为FALSE，则不会捕获异常，而是由Yaf抛出异常而不是触发异常处理逻辑。
+\end{compactitem}
+
+
+
 
 如果开启了 Yaf\_Dispatcher::catchException() （可以通过设置application.dispatcher.catchException来开启），并且在定义了异常处理的controller的情况下，Yaf会将所有未捕获的异常交给Error Controller的Error Action来处理。例如，捕获异常后可以根据异常代码来渲染指定的异常页面并显示给用户。
 
@@ -2241,7 +2997,7 @@ publicYaf_Dispatcher::__construct ( void )
 
 \subsection{Yaf\_Dispatcher::disableView()}
 
-关闭自动渲染
+关闭自动渲染， 默认是开启的, 在动作执行完成以后, Yaf会自动render以动作名命名的视图模板文件。
 
 
 \begin{lstlisting}[language=PHP]
@@ -2249,6 +3005,23 @@ public bool Yaf_Dispatcher::disableView ( void )
 \end{lstlisting}
 
 在一些用户自己会输出信息的情况下使用关闭自动渲染。例如，可以在一个action中仅仅返回FALSE来阻止当前action对应视图的自动渲染。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    /**
+     * Controller的init方法会被自动首先调用
+     */
+    public function init() {
+        /**
+         * 如果是Ajax请求, 则关闭HTML输出
+         */
+        if ($this->getRequest()->isXmlHttpRequest()) {
+            Yaf_Dispatcher::getInstance()->disableView();
+        }
+    }
+}
+\end{lstlisting}
 
 
 \subsection{Yaf\_Dispatcher::dispatch()}
@@ -2260,7 +3033,9 @@ public bool Yaf_Dispatcher::disableView ( void )
 public Yaf_Response_Abstract Yaf_Dispatcher::dispatch ( Yaf_Request_Abstract $request )
 \end{lstlisting}
 
-Yaf\_Dispatcher 的dispatch()方法的工作非常繁重，而且它还需要一个request对象。
+一般情况下，不需要开发者手动调用Yaf\_Dispatcher::dispatch()方法，Yaf\_Application::run()方法会自动调用这个方法。
+
+Yaf\_Dispatcher 的dispatch()方法的工作非常繁重，而且它还需要一个request对象，一旦出错则抛出异常。
 
 分发请求的过程有三个不同的事件：
 
@@ -2282,7 +3057,7 @@ Yaf\_Dispatcher 的dispatch()方法的工作非常繁重，而且它还需要一
 
 \subsection{Yaf\_Dispatcher::enableView()}
 
-开启自动渲染
+开启自动渲染，默认是开启的, 在动作执行完成以后, Yaf会自动render以动作名命名的视图模板文件。
 
 
 \begin{lstlisting}[language=PHP]
@@ -2292,26 +3067,63 @@ public Yaf_Dispatcher Yaf_Dispatcher::enableView ( void )
 如果前面的步骤禁用了自动渲染，在后面的步骤中还可以通过调用enableView()方法来重新开启自动渲染。
 
 \begin{lstlisting}[language=PHP]
-
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    /**
+     * Controller的init方法会被自动首先调用
+     */
+    public function init() {
+        /**
+         * 如果不是Ajax请求, 则开启HTML输出
+         */
+        if (!$this->getRequest()->isXmlHttpRequest()) {
+            Yaf_Dispatcher::getInstance()->enableView();
+        }
+    }
+}
 \end{lstlisting}
+
+
 \subsection{Yaf\_Dispatcher::flushInstantly()}
 
-打开关闭自动响应
+打开关闭自动响应。
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::flushInstantly ( bool $flag )
 \end{lstlisting}
 
+在Yaf\_Dispatcher::enableView()的情况下, 会使得Yaf\_Dispatcher调用Yaf\_Controller\_Abstract::display()方法，并直接输出响应给请求端。
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$application = new Yaf_Application("config.ini");
+
+/* 立即输出响应 */
+Yaf_Dispatcher::getInstance()->flushInstantly(TRUE);
+
+/* 此时会调用Yaf_Controller_Abstract::display()方法 */
+$application->run();
+\end{lstlisting}
+
+
 
 \subsection{Yaf\_Dispatcher::getApplication()}
-
-和Yaf\_Application::app()的执行结果相同，二者都是获取当前的Yaf\_Application实例。
-
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Application Yaf_Dispatcher::getApplication ( void )
 \end{lstlisting}
 
+和Yaf\_Application::app()的执行结果相同，二者都是获取当前的Yaf\_Application实例。
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$application = Yaf_Dispatcher::getInstance()->getApplication();
+//不过, 还是推荐大家使用
+$application = Application::app();
+\end{lstlisting}
 
 
 
@@ -2326,28 +3138,40 @@ public Yaf_Application Yaf_Dispatcher::getApplication ( void )
 public static Yaf_Dispatcher Yaf_Dispatcher::getInstance ( void )
 \end{lstlisting}
 
-
+\begin{lstlisting}[language=PHP]
+<?php
+$dispatcher = Yaf_Dispatcher::getInstance();
+\end{lstlisting}
 
 \subsection{Yaf\_Dispatcher::getRequest()}
-
-
-获取当前的请求实例
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Request_Abstract Yaf_Dispatcher::getRequest ( void )
 \end{lstlisting}
 
+获取当前的请求实例
 
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$request = Yaf_Dispatcher::getInstance()->getRequest();
+\end{lstlisting}
 
 
 
 \subsection{Yaf\_Dispatcher::getRouter()}
 
+\begin{lstlisting}[language=PHP]
+public Yaf_Router Yaf_Dispatcher::getRouter ( void )
+\end{lstlisting}
+
 获取路由器
 
 
 \begin{lstlisting}[language=PHP]
-public Yaf_Router Yaf_Dispatcher::getRouter ( void )
+<?php
+$router = Yaf_Dispatcher::getInstance()->getRouter();
 \end{lstlisting}
 
 
@@ -2356,26 +3180,53 @@ public Yaf_Router Yaf_Dispatcher::getRouter ( void )
 
 \subsection{Yaf\_Dispatcher::initView()}
 
-初始化视图引擎并返回它
+初始化视图引擎并返回它，\$templates\_dir是视图的模板目录的绝对路径。
+
+\$templates\_dir的默认值由Yaf\_Dispatcher保证, 可以通过Yaf\_Controller\_Abstract::setViewPath来改变这个值。
+
+
 
 
 \begin{lstlisting}[language=PHP]
 public Yaf_View_Interface Yaf_Dispatcher::initView ( string $templates_dir [, array $options ] )
 \end{lstlisting}
 
+Yaf采用延迟实例化视图引擎的策略, 所以只有在使用前调用此方法, 视图引擎才会被实例化。
+
 在初始化视图引擎时可以传入视图模板的目录，以及可选参数。
 
 
 
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initViewParameters(Yaf_Dispatcher $dispatcher) {
+        $dispatcher->initView(APPLICATION_PATH . "/views/")->assign("webroot", WEBROOT);
+    }
+}
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+如果需要自定义视图引擎, 那么需要在调用Yaf\_Dispatcher::setView自定义视图引擎之后, 才可以调用此方法, 否则将得不到正确的视图引擎, 因为默认的此方法会实例化一个Yaf\_View\_Simple视图引擎
+
+
 \subsection{Yaf\_Dispatcher::registerPlugin()}
-
-
-注册一个插件
-
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::registerPlugin ( Yaf_Plugin_Abstract $plugin )
 \end{lstlisting}
+
+注册一个插件，其中\$plugin是一个Yaf\_Plugin\_Abstract派生类的实例。
+
+
 
 
 \begin{lstlisting}[language=PHP]
@@ -2395,57 +3246,197 @@ class Bootstrap extends Yaf_Bootstrap_Abstract {
 
 Yaf假设插件脚本位于plugins目录下。
 
+\begin{example}
+Yaf\_Dispatcher::registerPlugin示例
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 所有在Bootstrap类中, 以_init开头的方法, 都会被Yaf调用,
+ * 这些方法, 都接受一个参数:Yaf_Dispatcher $dispatcher
+ * 调用的次序, 和申明的次序相同
+ */
+class Bootstrap extends Yaf_Bootstrap_Abstract{
+    /**
+     * 注册一个插件
+     * 插件的目录是在application_directory/plugins
+     */
+    public function _initPlugin(Yaf_Dispatcher $dispatcher) {
+        $user = new UserPlugin();
+        $dispatcher->registerPlugin($user);
+    }
+}
+
+
+/**
+ * 插件类定义
+ * UserPlugin.php
+ */
+class UserPlugin extends Yaf_Plugin_Abstract {
+
+    public function routerStartup(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin routerStartup called <br/>\n";
+    }
+
+    public function routerShutdown(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin routerShutdown called <br/>\n";
+    }
+
+    public function dispatchLoopStartup(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin DispatchLoopStartup called <br/>\n";
+    }
+
+    public function preDispatch(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin PreDispatch called <br/>\n";
+    }
+
+    public function postDispatch(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin postDispatch called <br/>\n";
+    }
+
+    public function dispatchLoopShutdown(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        echo "Plugin DispatchLoopShutdown called <br/>\n";
+    }
+}
+\end{lstlisting}
+\end{example}
+
+
+
+
+
+
+
 
 
 
 \subsection{Yaf\_Dispatcher::returnResponse()}
 
-是否返回响应。
+是否返回（Response对象）响应。
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::returnResponse ( bool $flag )
 \end{lstlisting}
 
-\subsection{Yaf\_Dispatcher::setDefaultAction()}
+如果启用, 则Response对象在分发完成以后不会自动输出给请求端, 而是交给开发者自己控制输出。
 
-设置路由的默认动作（传入指定的Action名字）
+\begin{lstlisting}[language=PHP]
+<?php
+$application = new Yaf_Application("config.ini");
+
+/* 关闭自动响应, 交给rd自己输出*/
+$response = $application->getDispatcher()->returnResponse(TRUE)->getApplication()->run();
+
+/** 输出响应*/
+$response->response();
+\end{lstlisting}
+
+\subsection{Yaf\_Dispatcher::setDefaultAction()}
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::setDefaultAction ( string $action )
 \end{lstlisting}
 
+设置路由的默认动作（传入指定的Action名字），如果在路由结果中不包含动作信息，则会使用此默认动作作为路由动作结果。
+
+
+\$action是默认动作名，需要全部小写。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract{
+
+    public function _initDefaultName(Yaf_Dispatcher $dispatcher) {
+        /**
+         * 这个只是举例, 本身Yaf默认的就是"Index"
+         */
+        $dispatcher->setDefaultController("Index")->setDefaultAction("index");
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_Dispatcher::setDefaultController()}
-
-设置路由的默认控制器（传入指定的控制器名字）
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::setDefaultController ( string $controller )
 \end{lstlisting}
 
-\subsection{Yaf\_Dispatcher::setDefaultModule()}
+设置路由的默认控制器（传入指定的控制器名字），如果在路由结果中不包含控制器信息，则会使用此默认控制器作为路由控制器结果。
 
-设置路由的默认模块（传入指定的模块名字）
+\$controller是默认控制器名，需要首字母大写。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract{
+
+    public function _initDefaultName(Yaf_Dispatcher $dispatcher) {
+        /**
+         * 这个只是示例, 本身Yaf默认的就是"Index"
+         */
+        $dispatcher->setDefaultModule("Index")->setDefaultController("Index")->setDefaultAction("index");
+    }
+}
+\end{lstlisting}
+
+\subsection{Yaf\_Dispatcher::setDefaultModule()}
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::setDefaultModule ( string $module )
 \end{lstlisting}
 
-\subsection{Yaf\_Dispatcher::setErrorHandler()}
+设置路由的默认模块（传入指定的模块名字），如果在路由结果中不包含模块信息，则会使用此默认模块作为路由模块结果。
 
-设置错误处理函数。例如，如果在application.dispatcher.throwException关闭的情况下，Yaf会在出错的时候触发错误，这个时候如果设置了错误处理函数，则会把控制交给错误处理函数处理，因此当错误发生的时候这个错误处理函数将被调用。
+\$module是默认模块名，需要首字母大写。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initDefaultName(Yaf_Dispatcher $dispatcher) {
+         $dispatcher->setDefaultModule('Index')->setDefaultController('Index')->setDefaultAction('index');
+    }
+}
+\end{lstlisting}
+
+\subsection{Yaf\_Dispatcher::setErrorHandler(\$callback,\$error\_type)}
+
+设置错误处理函数。
+
+
+例如，如果application.dispatcher.throwException关闭，那么Yaf会在出错的时候触发错误，这个时候如果设置了错误处理函数，则会把控制权交给错误处理函数处理，这样当错误发生的时候，这个错误处理函数将被调用。
 
 \begin{compactitem}
 \item \$callback：错误处理的回调函数
-\item \$error\_type：错误类型
+\item \$error\_type：要捕获的错误类型
 \end{compactitem}
-
-
 
 \begin{lstlisting}[language=PHP]
 <?php
 $dispatcher->setErrorHandler(array(get_class($this),'error_handler'));
 \end{lstlisting}
+
+其中，错误处理函数函数需要至少接受两个参数：错误代码(\$error\_code)和错误信息(\$error\_message)，可选的还可以接受三个参数——错误文件(\$err\_file)，错误行(\$err\_line)和错误上下文(\$errcontext)
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 一般可放在Bootstrap中定义错误处理函数
+ */
+function myErrorHandler($errno, $errstr, $errfile, $errline) {
+    switch ($errno) {
+        case YAF_ERR_NOTFOUND_CONTROLLER:
+        case YAF_ERR_NOTFOUND_MODULE:
+        case YAF_ERR_NOTFOUND_ACTION:
+            header("Not Found");
+            break;
+        default:
+            echo "Unknown error type: [$errno] $errstr<br />\n";
+            break;
+    }
+    return true;
+}
+Yaf_Dispatcher::getInstance()->setErrorHandler("myErrorHandler");
+\end{lstlisting}
+
 
 
 \subsection{Yaf\_Dispatcher::setRequest()}
@@ -2647,13 +3638,27 @@ private void Yaf_Dispatcher::__sleep ( void )
 
 \subsection{Yaf\_Dispatcher::throwException()}
 
-开启/关闭异常抛出
+开启/关闭异常抛出（如果关闭则触发错误），默认是开启状态。
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Dispatcher Yaf_Dispatcher::throwException ([ bool $flag ] )
 \end{lstlisting}
 
-Yaf\_Dispatcher可以设置当意外的错误发生时是否开启/关闭异常抛出。其中，当开启的时候，Yaf将会抛出异常而不是触发可捕捉的错误。
+Yaf\_Dispatcher可以设置当意外的错误发生时是否开启/关闭异常抛出，其中：
+
+\begin{compactitem}
+\item 当开启的时候，Yaf将会抛出异常而不是触发可捕捉的错误。
+\item 当关闭的时候，Yaf将会在出错时采用触发错误的方式。
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+$app = new Yaf_Application("conf.ini");
+/**
+ * 关闭抛出异常
+ */
+Yaf_Dispatcher::getInstance()->throwException(FALSE);
+\end{lstlisting}
 
 另外，也可以使用 application.dispatcher.throwException来达到相同的目的。
 
@@ -2712,8 +3717,103 @@ private void Yaf_Dispatcher::__wakeup ( void )
 \end{lstlisting}
 
 
+\subsection{Yaf\_Dispatcher::setAppDirectory()}
+
+\begin{lstlisting}[language=PHP]
+boolean Yaf_Dispatcher::setAppDirectory(string $directory);
+\end{lstlisting}
+
+（已废弃）改变APPLICATION\_PATH（绝对路径），这样就可以从新的APPLICATION\_PATH下加载控制器/视图，但是不会改变自动加载的路径。
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$config = array(
+    "ap" => array(
+        "directory" => "/usr/local/www/ap",
+    ),
+);
+$app = new Yaf_Application($config);
+$app->getDispatcher()->setAppDirectory("/usr/local/new/application")->getApplication()->run();
+\end{lstlisting}
+
+
+\subsection{Yaf\_Dispatcher::setRequest()}
+
+\begin{lstlisting}[language=PHP]
+public boolean Yaf_Dispatcher::setRequest( Yaf_Request_Abstract  $request );
+\end{lstlisting}
+
+（已废弃）设置请求对象
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$request = new Yaf_Request_Simple("Index", "Index", "index");
+Yaf_Dispatcher::getInstance()->setRequest($request);
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+
 
 \chapter{Yaf\_Config\_Abstract}
+
+
+Yaf\_Config\_Abstract被设计在应用程序中简化访问和使用配置数据。它为在应用程序代码中访问这样的配置数据提 供了一个基于用户接口的嵌入式对象属性。配置数据可能来自于各种支持等级结构数据存储的媒体。
+
+Yaf\_Config\_Abstract实现了Countable, ArrayAccess 和 Iterator 接口，这样就可以基于Yaf\_Config\_Abstract对象来使用count()函数和PHP语句（例如foreach），也可以通过数组方式访问Yaf\_Config\_Abstract的元素。
+
+
+\begin{compactitem}
+\item Yaf\_Config\_Ini为存储在INI文件的配置数据提供了适配器。
+
+\item Yaf\_Config\_Simple为存储在PHP的数组中的配置数据提供了适配器。
+
+\end{compactitem}
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Config\_Abstract。
+
+
+
+\section{Synopsis}
+
 
 \begin{lstlisting}[language=PHP]
 abstract Yaf_Config_Abstract {
@@ -2728,15 +3828,47 @@ abstract Yaf_Config_Abstract {
 }
 \end{lstlisting}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
 \section{Property}
 
 
 \subsection{\$\_config}
 
+配置实际的保存容器
+
 
 \subsection{\$\_readonly}
 
-
+表示配置是否容许修改，其中对于Yaf\_Config\_Ini来说永远都是TRUE。
 
 \section{Method}
 
@@ -2744,7 +3876,7 @@ abstract Yaf_Config_Abstract {
 \subsection{Yaf\_Config\_Abstract::get()}
 
 
-getter
+Yaf\_Config\_Abstract实现了\_\_get方法, 所以获取配置将会变得很容易。
 
 
 
@@ -2757,6 +3889,14 @@ abstract public mixed Yaf_Config_Abstract::get ( string $name , mixed $value )
 \end{lstlisting}
 
 
+\begin{example}
+获取配置的示例
+\begin{lstlisting}[language=PHP]
+$config = new Yaf_Config_Ini('/path/to/config.ini', 'staging');
+echo $config->database->get("params")->host;   // 输出 "dev.example.com"
+echo $config->get("database")->params->dbname; // 输出 "dbname"
+\end{lstlisting}
+\end{example}
 
 \subsection{Yaf\_Config\_Abstract::readonly()}
 
@@ -2794,7 +3934,41 @@ abstract public array Yaf_Config_Abstract::toArray ( void )
 
 
 
-Yaf\_Config\_Ini允许开发者通过嵌套的对象属性语法在应用程序中用熟悉的INI格式存储和读取配置数据。 INI格式在提供拥有配置数据键的等级结构和配置数据节之间的继承能力方面具有专长。
+Yaf\_Config\_Ini允许开发者通过嵌套的对象属性语法在应用程序中用熟悉的INI格式存储和读取配置数据。 
+
+
+
+\begin{lstlisting}[language=bash]
+[base]
+database.master.host = localhost
+[production : base]
+;Yaf的配置
+application.directory    = /usr/local/www/production
+;应用的配置
+webhost                  = www.example.com
+database.adapter         = pdo_mysql
+database.params.host     = db.example.com
+database.params.username = dbuser
+database.params.password = secret
+database.params.dbname   = dbname
+; 开发站点配置数据从生产站点配置数据集成并如果需要可以重写
+[dev : production]
+application.directory    = /usr/dev/htdocs
+database.params.host     = dev.example.com
+database.params.username = devuser
+database.params.password = devsecret
+\end{lstlisting}
+
+这里，dev节可以得到production节的所有配置，并间接获得base节的配置，并且覆盖application.directory的配置为\texttt{"/usr/dev/htdocs"}。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Config\_Ini。
+
+当使用INI文件作为Yaf\_Application的配置的时候, 可以打开yaf.cache\_config来提升性能。
+
+
+
+
+INI格式在提供拥有配置数据键的等级结构和配置数据节之间的继承能力方面具有专长。
 
 配置数据等级结构通过用点或者句号(.)分离键值。 一个节可以扩展或者通过在节的名称之后带一个冒号(:)和被继承的配置数据的节的名称来从另一个节继承。
 
@@ -2812,6 +3986,10 @@ parse\_ini\_file()函数和 php.ini 文件没有关系，该文件在运行脚�
 字符 \texttt{\{\}|\&\~{}![()"} 也不能用在键名的任何地方，而且这些字符在选项值中有着特殊的意义。
 
 具体来说，Yaf\_Config\_Ini利用PHP的函数parse\_ini\_file()来解析配置文件，Yaf\_Config\_Ini的值可能传递给parse\_ini\_file()函数的值可能包括``TRUE", ``FALSE",``yes", ``no"和``NULL"等。
+
+
+\section{Synopsis}
+
 
 \begin{lstlisting}[language=PHP]
 Yaf_Config_Ini extends Yaf_Config_Abstract implements Iterator , Traversable , ArrayAccess , Countable {
@@ -2842,9 +4020,7 @@ Yaf_Config_Ini extends Yaf_Config_Abstract implements Iterator , Traversable , A
 \end{lstlisting}
 
 
-这个例子说明了使用Yaf\_Config\_Ini从一个INI配置文件中获取配置数据的基本用法。 这个例子中既有生产环境的配置方法也有演示环境的配置方法。 因为演示环境的配置跟生产环境的非常类似，所以演示环境的配置继承了生产环境的配置。 
-
-在复杂的情况下，决定是任意的，也可以写成相反的。在更复杂的情况下，生产环境继承自演示环境不是不可能的。 假设，以下配置数据都包含在/path/to/config.ini中：
+以下示例配置数据都包含在/path/to/config.ini中：
 
 \begin{lstlisting}[language=bash]
 ; Production site configuration data
@@ -2880,6 +4056,10 @@ var_dump($config->get("database.params.username"));
 // string(7) "devuser
 \end{lstlisting}
 \end{example}
+
+这个例子说明了使用Yaf\_Config\_Ini从一个INI配置文件中获取配置数据的基本用法。 这个例子中既有生产环境的配置方法也有演示环境的配置方法。 因为演示环境的配置跟生产环境的非常类似，所以演示环境的配置继承了生产环境的配置。 
+
+在复杂的情况下，决定是任意的，也可以写成相反的。在更复杂的情况下，生产环境继承自演示环境不是不可能的。
 
 
 \section{Property}
@@ -3116,6 +4296,14 @@ public void Yaf_Config_Ini::valid ( void )
 
 
 \chapter{Yaf\_Config\_Simple}
+
+Yaf\_Config\_Simple为存储在数组中的配置数据提供了适配器。
+
+如果打开yaf.use\_namespace，可以使用Yaf\textbackslash Config\_Simple。
+
+
+
+\section{Synopsis}
 
 
 Yaf\_Config\_Simple 是 Yaf\_Config\_ini 的简洁版本，只允许传入数组进行初始化，并提供了设置readonly的参数。
@@ -3390,11 +4578,55 @@ public void Yaf_Config_Simple::valid ( void )
 
 Yaf\_Controller\_Abstract是Yaf的MVC体系的核心部分，每个用户自定义controller都应当继承Yaf\_Controller\_Abstract。
 
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Controller\_Abstract。
+
+Yaf\_Controller\_Abstract体系具有可扩展性, 可以通过继承已有的类, 来实现这个抽象类, 从而添加自己的应用逻辑。
+
 在用户自己定义的controller中无法调用\_\_construct方法，Yaf\_Controller\_Abstract 提供了一个魔术方法Yaf\_Controller\_Abstract::init()，这样当controller被实例化的时候，init()将被调用。
+
+对于Controller来说, 真正的执行体是在Controller中定义的一个一个的Action（动作）, 当然这些动作也可以定义在Controller外部。
 
 Action可能需要参数。例如，当一个请求来到的时候，在路由中如果请求的参数有相同名称的变量（例如Yaf\_Request\_Abstract::getParam()）， Yaf将把参数传递给action方法（Yaf\_Action\_Abstract::execute()）。
 
 
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public function indexAction($name, $value) {
+    }
+}
+\end{lstlisting}
+
+
+
+在使用默认路由的情况下, 对于请求\url{http://domain.com/index/index/name/a/value/2}就会在Request对象中生成两个参数name和value。
+
+注意，这里的动作indexAction的参数与此同名，因此在indexAction中, 可以有如下两种方式来获取这俩个参数：
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public function indexAction($name, $value) {
+        //直接获取参数;
+        echo $name, $value; //a2
+        //通过Request对象获取
+        echo $this->getRequest()->getParam("name"); //a
+    }
+}
+\end{lstlisting}
+
+需要注意的是, 这些参数是来自用户请求URL, 所以使用前一定要做安全化过滤。
+
+
+
+
+
+
+另外, 为了防止PHP抛出参数缺失的警告, 应该尽量定义有默认值的参数。
+
+
+\section{Synopsis}
 
 
 
@@ -3433,6 +4665,14 @@ abstract Yaf_Controller_Abstract {
 
 \subsection{\$actions}
 
+
+有些时候为了拆分比较大的Controller，使得代码更加清晰和易于管理。
+
+Yaf支持将具体的动作分开定义，每个动作都需要实现 Yaf\_Action\_Abstract 就可以通过定义Yaf\_Controller\_Abstract::\$actions来指明那些动作对应于具体的那些分离的类。
+
+
+
+
 开发者可以通过使用\$actions和 Yaf\_Action\_Abstract 在一个单独的PHP脚本中定义action函数。
 
 
@@ -3456,6 +4696,9 @@ class IndexController extends Yaf_Controller_Abstract {
 \end{lstlisting}
 \end{example}
 
+
+当路由到动作Index的时候, 就会加载\texttt{APPLICATION\_PATH . "/actions/Index.php"}，并且在这个脚本文件中寻找DummyAction(可通过yaf.name\_suffix和yaf.name\_separator来改变具体命名形式)，继而调用这个类的execute方法。
+
 \begin{example}
 Dummy\_action.php
 \begin{lstlisting}[language=PHP]
@@ -3469,6 +4712,9 @@ class DummyAction extends Yaf_Action_Abstract {
 \end{lstlisting}
 \end{example}
 
+注意，在yaf.st\_compatible打开的情况下，会产生额外的查找逻辑。
+
+
 \subsection{\$\_module}
 
 模块名
@@ -3479,12 +4725,12 @@ class DummyAction extends Yaf_Action_Abstract {
 
 \subsection{\$\_request}
 
-当前的请求实例
+当前的请求实例，属性的值由Yaf\_Dispatcher保证，一般通过Yaf\_Controller\_Abstract::getRequest来获取此属性。
 
 
 \subsection{\$\_response}
 
-当前的响应实例
+当前的响应实例，属性的值由Yaf\_Dispatcher保证，一般通过Yaf\_Controller\_Abstract::getResponse来获取此属性。
 
 
 \subsection{\$\_invoke\_args}
@@ -3493,7 +4739,9 @@ class DummyAction extends Yaf_Action_Abstract {
 
 \subsection{\$\_view}
 
-视图引擎
+视图引擎，Yaf采用延时实例化视图引擎来提高性能，所以这个属性直到显式的调用了Yaf\_Controller\_Abstract::getView或者Yaf\_Controller\_Abstract::initView以后才可用。
+
+
 
 
 \section{Method}
@@ -3522,32 +4770,50 @@ final private Yaf_Controller_Abstract::__construct ( void )
 
 \subsection{Yaf\_Controller\_Abstract::display()}
 
-
-输出页面
-
-
-
-
+Yaf\_Controller\_Abstract::display()是Yaf\_View\_Interface::display()的包装。
 
 \begin{lstlisting}[language=PHP]
 protected bool Yaf_Controller_Abstract::display ( string $tpl [, array $parameters ] )
 \end{lstlisting}
 
+渲染视图模板，并且直接输出渲染页面的结果。
+
+
+\begin{compactitem}
+\item \$tpl - 要渲染的动作名
+\item \$parameters - 要传递给视图引擎的渲染参数, 也可以使用Yaf\_View\_Interface::assign来替代。
+\end{compactitem}
+
+
+
+
 
 
 \begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        /* 首先关闭自动渲染 */
+        Yaf_Dispatcher::getInstance()->disableView();
+    }
 
+    public function indexAction() {
+        $this->initView();
+        /* 自己输出响应 */
+        $this->display("test.phtml", array("name" => "value"));
+    }
+}
 \end{lstlisting}
 
 \subsection{Yaf\_Controller\_Abstract::forward()}
-
-转发请求（在转发失败时FALSE）
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Controller_Abstract::forward ( string $module [, string $controller [, string $action [, array $paramters ]]] )
 \end{lstlisting}
 
-forward()将当前的请求转交给另外的Action，而且调用Yaf\_Controller\_Abstract::forward()以后不会直接立即跳转到目的Action执行，而是会在当前的Action执行完成后，在下一轮的DispatchLoop中才会交给目的Action。
+转发请求（将当前请求转给另外一个动作处理，在转发失败时返回FALSE）
+
+默认情况下，Yaf\_Controller\_Abstract::forward()仅仅只是登记下要forward的目的地Action，并不会立即跳转目的Action执行，而是会等到当前的Action执行完成以后，在下一轮的DispatchLoop中才会交给目的Action。
 
 如果希望立即跳转到目的Action，那么需要使用return结束当前的执行流程并立刻跳转。
 
@@ -3555,19 +4821,19 @@ forward()将当前的请求转交给另外的Action，而且调用Yaf\_Controlle
 \begin{compactitem}
 \item module
 
-要跳转的目的Action的Module, 如果是NULL, 则默认Module会被采用.
+要跳转的目的Action的Module, 如果是NULL, 则默认（或当前）Module会被采用.
 
 \item controller
 
-要跳转的目的Action的Controller, 如果是NULL, 则默认Controller会被采用.
+要跳转的目的Action的Controller, 如果是NULL, 则默认（或当前）Controller会被采用.
 
 \item action
 
-要跳转的目的Action.
+要跳转的目的Action（注意要全部小写）。
 
 \item paramters
 
-跳转参数, 可以在目的Action中通过Yaf\_Request\_Abstrace::getParam()来获取.
+跳转参数（一个关联数组）, 可以在目的Action中通过Yaf\_Request\_Abstrace::getParam()来获取.
 
 \end{compactitem}
 
@@ -3611,46 +4877,96 @@ public void Yaf_Controller_Abstract::getInvokeArgs ( void )
 
 \subsection{Yaf\_Controller\_Abstract::getModuleName()}
 
-获取当前控制器所属的模块名
-
-
-
-
 \begin{lstlisting}[language=PHP]
 public string Yaf_Controller_Abstract::getModuleName ( void )
 \end{lstlisting}
 
 
+获取当前控制器所属的模块名，成功返回模块名，失败返回NULL。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        echo $this->getModuleName();
+    }
+}
+\end{lstlisting}
+
+
+
+
 \subsection{Yaf\_Controller\_Abstract::getRequest()}
 
-获取请求实例
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Request_Abstract Yaf_Controller_Abstract::getRequest ( void )
 \end{lstlisting}
 
+获取当前的请求实例。
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $request = $this->getRequest();
+    }
+}
+\end{lstlisting}
+
+
+
 \subsection{Yaf\_Controller\_Abstract::getResponse()}
 
-获取响应实例
 
 \begin{lstlisting}[language=PHP]
 public Yaf_Response_Abstract Yaf_Controller_Abstract::getResponse ( void )
 \end{lstlisting}
 
-\subsection{Yaf\_Controller\_Abstract::getView()}
+获取当前的响应实例
 
-获取当前的视图引擎
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $response = $this->getResponse();
+    }
+}
+\end{lstlisting}
+
+\subsection{Yaf\_Controller\_Abstract::getView()}
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Controller_Abstract::getViewpath ( void )
 \end{lstlisting}
 
-\subsection{Yaf\_Controller\_Abstract::getViewPath()}
-
-获取当前的视图引擎的路径
+获取当前的视图引擎
 
 \begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $view = $this->getView();
+    }
+}
+\end{lstlisting}
 
+\subsection{Yaf\_Controller\_Abstract::getViewPath()}
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Controller_Abstract::getViewpath ( void )
+\end{lstlisting}
+
+获取当前的视图模板目录的路径
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        echo $this->getViewPath();
+    }
+}
 \end{lstlisting}
 
 \subsection{Yaf\_Controller\_Abstract::init()}
@@ -3671,38 +4987,103 @@ Yaf\_Controller\_Abstract::\_\_construct() 是final类型，所以用户不能�
 
 \subsection{Yaf\_Controller\_Abstract::initView()}
 
-初始化视图引擎
-
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Controller_Abstract::initView ([ array $options ] )
 \end{lstlisting}
 
-\subsection{Yaf\_Controller\_Abstract::redirect()}
 
-重定向请求
+初始化视图引擎，而且Yaf采用了延迟实例化视图引擎的策略，所以只有在使用前调用此方法，视图引擎才会被实例化
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $view = $this->initView();
+        /* 此后就可以直接通过获取Yaf_Controller_Abstract::$_view
+         * 来访问当前视图引擎 
+         */
+        $this->_view->assign("webroot", "http://domain.com/");
+    }
+}
+\end{lstlisting}
+
+\subsection{Yaf\_Controller\_Abstract::redirect()}
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Controller_Abstract::redirect ( string $url )
 \end{lstlisting}
 
+
+
+重定向请求到新的路径。
+
+\begin{compactenum}
+\item \$url - 重定向请求到的新的路径
+\end{compactenum}
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        if($user_not_login)
+              $this->redirect("/login/");
+              return false;
+    }
+}
+\end{lstlisting}
+
 \subsection{Yaf\_Controller\_Abstract::render()}
 
-渲染页面
-
+Yaf\_Controller\_Abstract::render()方法是对Yaf\_View\_Interface::render()的包装。
 
 \begin{lstlisting}[language=PHP]
 protected string Yaf_Controller_Abstract::render ( string $tpl [, array $parameters ] )
 \end{lstlisting}
 
+渲染视图模板并得到渲染页面的结果。
+
+
+\begin{compactitem}
+\item \$tpl - 要渲染的动作名
+\item \$parameters - 要传递给视图引擎的渲染参数, 也可以使用Yaf\_View\_Interface::assign来替代。
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        /* 首先关闭自动渲染 */
+        Yaf_Dispatcher::getInstance()->disableView();
+    }
+
+    public function indexAction() {
+        $this->initView();
+        /* 自己输出响应 */
+        echo $this->render("test.phtml");
+    }
+}
+\end{lstlisting}
+
+
 \subsection{Yaf\_Controller\_Abstract::setViewpath()}
-
-设置视图引擎路径
-
 
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Controller_Abstract::setViewpath ( string $view_directory )
+\end{lstlisting}
+
+修改视图模板路径（绝对路径），Yaf\_Controller\_Abstract::render就会在整个目录下寻找模板文件。
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->setViewPath("/usr/local/www/tpl/");
+    }
+}
 \end{lstlisting}
 
 
@@ -3712,10 +5093,20 @@ public void Yaf_Controller_Abstract::setViewpath ( string $view_directory )
 
 在Yaf中一个action可以采用单独定义Yaf\_Action\_Abstract来实现，也就是说一个action方法也可以是一个Yaf\_Action\_Abstract的派生类。
 
+默认情况下，Yaf\_Action\_Abstract是MVC中C的动作, 一般而言动作都是定义在Yaf\_Controller\_Abstract的派生类中的, 但是有的时候, 为了使得代码清晰, 分离一些大的控制器, 则可以采用单独定义Yaf\_Action\_Abstract来实现。
+
+Yaf\_Action\_Abstract体系具有可扩展性, 可以通过继承已有的类, 来实现这个抽象类, 从而添加应用自己的应用逻辑。
+
+
+
+
 
 
 Yaf需要一个可以被它所调用的入口点，而且Yaf需要另一个类似\_\_invoke()的魔术方法来完成这样的任务，所以在用户自己的action类里面必须要实现抽象方法 Yaf\_Action\_Abstract::execute()。
 
+如果打开了yaf.use\_namespace，也可以使用Yaf\textbackslash Action\_Abstract。
+
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -3840,7 +5231,14 @@ public Yaf_Controller_Abstract Yaf_Action_Abstract::getController ( void )
 
 \chapter{Yaf\_View\_Interface}
 
-Yaf给用户提供一个了一个可扩展的、可自定的视图引擎接口，用户可以使用自己的视图引擎来代替Yaf内置的Yaf\_View\_Simple。
+Yaf给用户提供一个了一个可扩展的、可自定的视图引擎接口，其中定义了Yaf中使用的视图引擎需要实现的方法和功能。
+
+
+用户可以使用自己的视图引擎来代替Yaf内置的Yaf\_View\_Simple。
+
+在打开yaf.use\_namespace的情况下，也可以使用Yaf\textbackslash View\_Interface。
+
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -3915,9 +5313,14 @@ abstract public void Yaf_View_Interface::setScriptPath ( string $template_dir )
 
 
 
-Yaf提供了高性能的视图引擎——也就是Yaf内建的一个模板引擎Yaf\_View\_Simple，它是个只支持PHP脚本的简单而快速的模板引擎。
+Yaf提供了高性能的视图引擎——也就是Yaf内建的一个模板引擎Yaf\_View\_Simple。
+
+Yaf\_View\_Simple是一个支持PHP脚本的简单而快速的模板引擎，开发者通过Yaf\_View\_Interface::assign()传递的模板变量，可以在视图模板中直接通过变量名使用。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash View\_Simple。
 
 
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -3947,7 +5350,12 @@ Yaf_View_Simple implements Yaf_View_Interface {
 \subsection{\$\_tpl\_vars}
 
 
+所有通过Yaf\_View\_Simple::assign分配的变量都保存在此属性中。
+
+
 \subsection{\$\_tpl\_dir}
+
+当前视图引擎的模板文件基目录。
 
 
 \section{Method}
@@ -3955,7 +5363,7 @@ Yaf_View_Simple implements Yaf_View_Interface {
 
 \subsection{Yaf\_View\_Simple::assign()}
 
-为视图引擎分配一个模板变量
+为视图引擎分配一个模板变量，在视图模板中可以直接通过\texttt{\$\{\$name\}}获取模板变量值。
 
 \begin{lstlisting}[language=PHP]
 public bool Yaf_View_Simple::assign ( string $name [, mixed $value ] )
@@ -3964,7 +5372,9 @@ public bool Yaf_View_Simple::assign ( string $name [, mixed $value ] )
 \begin{compactitem}
 \item \$name - 字符串或数组，如果为字符串则\$value不能为空。
 
-\item \$value
+如果为数组则\$value须为空, 此参数为变量名和值的关联数组。
+
+\item \$value - 分配的模板变量值
 \end{compactitem}
 
 
@@ -3979,6 +5389,9 @@ class IndexController extends Yaf_Controller_Abstract {
 }
 \end{lstlisting}
 
+如果\$name不是合法的PHP变量名（比如整数或者是包含``|"的字符串），那么在视图模板文件中, 将不能直接通过\texttt{\$\{\$name\}}来访问这个变量。
+
+当然，Yaf还是允许开发者可以在视图模板文件中通过\texttt{\$this->\_tpl\_vars[\$name]}来访问这个变量。
 
 
 \begin{lstlisting}[language=HTML]
@@ -3997,7 +5410,20 @@ class IndexController extends Yaf_Controller_Abstract {
 </html>
 \end{lstlisting}
 
-
+\begin{example}
+Yaf\_View\_Simple::assign()示例
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $params = array(
+            'name' => 'value',
+        );
+        $this->getView()->assign($params)->assign("foo", "bar");
+    }
+}
+\end{lstlisting}
+\end{example}
 
 \subsection{Yaf\_View\_Simple::assignRef()}
 
@@ -4110,11 +5536,18 @@ public bool Yaf_View_Simple::display ( string $tpl [, array $tpl_vars ] )
 \end{lstlisting}
 
 \begin{compactitem}
-\item \$tpl
-\item \$tpl\_vars
+\item \$tpl - 视图模板文件（绝对路径），一般由Yaf\_Controller\_Abstract提供
+\item \$tpl\_vars - 关联数组（模板变量）
 \end{compactitem}
 
-
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        $this->getView()->display($this->_script_path . "/test.phtml");
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_View\_Simple::eval()}
 
@@ -4147,7 +5580,7 @@ public void Yaf_View_Simple::__get ([ string $name ] )
 
 
 \begin{compactitem}
-\item \$name - 分配的变量名
+\item \$name - 分配的模板变量名
 
 如果为空，所有传递的变量都会被返回
 
@@ -4156,17 +5589,63 @@ public void Yaf_View_Simple::__get ([ string $name ] )
 
 
 \begin{lstlisting}[language=PHP]
-
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public function init() {
+        $this->initView();
+    }
+    public funciton indexAction() {
+        //通过__get直接获取变量值
+        echo $this->_view->name;
+    }
+}
 \end{lstlisting}
 
+
+\subsection{Yaf\_View\_Simple::get()}
+
+获取视图引擎的一个模板变量值
+
+\begin{lstlisting}[language=PHP]
+public mixed Yaf_View_Simple::get( string  $name );
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name - 模板变量名
+\end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public function init() {
+        $this->initView();
+    }
+    public funciton indexAction() {
+        echo $this->_view->get("name");
+    }
+}
+\end{lstlisting}
+
+
+
 \subsection{Yaf\_View\_Simple::getScriptPath()}
-
-获取模板目录
-
 
 \begin{lstlisting}[language=PHP]
 public string Yaf_View_Simple::getScriptPath ( void )
 \end{lstlisting}
+
+获取当前的模板目录
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        echo  $this->getView()->getScriptPath();
+    }
+}
+\end{lstlisting}
+
+
 
 
 
@@ -4186,36 +5665,55 @@ public void Yaf_View_Simple::__isset ( string $name )
 
 \subsection{Yaf\_View\_Simple::render()}
 
-渲染模板并得到结果。
+渲染一个视图模板并得到结果。
 
 \begin{lstlisting}[language=PHP]
 public string Yaf_View_Simple::render ( string $tpl [, array $tpl_vars ] )
 \end{lstlisting}
 
 \begin{compactitem}
-\item \$tpl
-\item \$tpl\_vars
+\item \$tpl - 视图模板文件（绝对路径），一般由Yaf\_Controller\_Abstract提供
+\item \$tpl\_vars - 关联数组（模板变量）
 \end{compactitem}
 
-
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        echo $this->getView()->render($this->_script_path . "/test.phtml");
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_View\_Simple::\_\_set()}
-
-为视图引擎分配一个模板变量
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_View_Simple::__set ( string $name , mixed $value )
 \end{lstlisting}
 
-
-这是一个更简单并且用来替代 Yaf\_View\_Simple::assign() 的方法
+为视图引擎分配一个模板变量，在视图模板中可以直接通过\texttt{\$\{\$name\}}获取模板变量值。
 
 \begin{compactitem}
-\item \$name - 一个字符串值的名字
+\item \$name - 字符串或者关联数组, 如果为字符串则\$value不能为空, 此字符串代表要分配的变量名。
 
-\item \$value
+如果为数组，则\$value须为空，此参数为变量名和值的关联数组。
 
+\item \$value - 分配的模板变量值
 \end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getView()->name = "value";
+    }
+}
+\end{lstlisting}
+
+
+
+
+这是一个更简单并且用来替代 Yaf\_View\_Simple::assign() 的方法
 
 \begin{lstlisting}[language=PHP]
 <?php
@@ -4228,7 +5726,7 @@ class IndexController extends Yaf_Controller_Abstract {
 
 \subsection{Yaf\_View\_Simple::setScriptPath()}
 
-设置模板的目录
+设置模板的目录，默认的Yaf\_Dispatcher会设置此目录为\texttt{APPLICATION\_PATH . "/views"}。
 
 \begin{lstlisting}[language=PHP]
 public bool Yaf_View_Simple::setScriptPath ( string $template_dir )
@@ -4236,13 +5734,24 @@ public bool Yaf_View_Simple::setScriptPath ( string $template_dir )
 
 
 \begin{compactitem}
-\item \$template\_dir
+\item \$template\_dir - 视图模板的基目录（局对路径）
 \end{compactitem}
 
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        $this->getView()->setScriptPath("/tmp/views/");
+    }
+}
+\end{lstlisting}
 
 \chapter{Yaf\_Loader}
 
-Yaf\_Loader 类为Yaf提供了自动加载(autoload)功能的全面解决方案。
+Yaf\_Loader 类为Yaf提供了自动加载(autoload)功能的全面解决方案，这样Yaf就可以根据类名中包含的路径信息实现类的定位和自动加载。
+
+\section{Synopsis}
+
 
 \begin{lstlisting}[language=PHP]
 Yaf_Loader {
@@ -4250,24 +5759,26 @@ Yaf_Loader {
     protected $_local_ns ;
     protected $_library ;
     protected $_global_library ;
-    static $_instance ;
+    protected static $_instance ;
     /* 方法 */
-    public void autoload ( void )
+    public void autoload ( $class_name )
     public void clearLocalNamespace ( void )
     private void __clone ( void )
-    private__construct ( void )
-    public static void getInstance ( void )
+    private __construct ( void )
+    public static void getInstance ( [$local_library_path [,$global_library_path]] )
     public Yaf_Loader getLibraryPath ([ bool $is_global = false ] )
     public void getLocalNamespace ( void )
-    public static void import ( void )
-    public void isLocalName ( void )
-    public void registerLocalNamespace ([ mixed $prefix ] )
-    public Yaf_Loader setLibraryPath ( string $directory [, bool $is_global = false ] )
+    public static void import (string $file)
+    public void isLocalName ($class_name)
+    public void registerLocalNamespace (mixed $name_prefix)
+    public Yaf_Loader setLibraryPath ( string $library_path [, bool $is_global = false ] )
     private void __sleep ( void )
     private void __wakeup ( void )
 }
 \end{lstlisting}
 
+
+Yaf\_Loader也提供了对传统的require\_once的替代方案，开发者可以通过舍弃传统的require\_once获得一些性能上的优势。
 
 在第一次使用的时候，Yaf\_Loader将检索 Yaf\_Application 的实例， 而且Yaf\_Loader 实现了单例模式，并使用spl\_autoload注册它自己，通过 Yaf\_Loader::getInstance() 返回它的实例。
 
@@ -4395,44 +5906,74 @@ class A_B_TestModel =>
 
 \subsection{\$\_local\_ns}
 
-
+\$\_local\_ns指示了本地类的类名前缀，可以通过Yaf\_Loader::registerLocalNamespace来添加新的值。
 
 \subsection{\$\_library}
 
-
+\$\_library是本地（自身）类加载路径，其值通常来自配置文件中的application.library。
 
 默认情况下，它的值是 \texttt{application.directory . "/library"}， 可以通过修改\texttt{application.ini}中的\texttt{application.library}或者调用 Yaf\_Loader::setLibraryPath() 改变它。
 
 \subsection{\$\_global\_library}
 
+\$\_global\_library是全局类加载路径，其值通常来自php.ini中的application.library。
+
 
 \subsection{\$\_instance}
+
+Yaf\_Loader实现了单例模式，一般由Yaf\_Application负责初始化Yaf\_Loader，并使用\$\_instance属性保存当前Yaf\_Loader实例。
 
 \section{Method}
 
 
-\subsection{Yaf\_Loader::autoload()}
+\subsection{Yaf\_Loader::autoload(\$class\_name)}
 
-自动加载
+载入一个类, 这个方法被Yaf用作自动加载类的方法, 当然也可以手动调用来实现自动加载。
 
 
 
 
 \begin{lstlisting}[language=PHP]
-public void Yaf_Loader::autoload ( void )
+public void Yaf_Loader::autoload ($class_name)
+\end{lstlisting}
+
+\$class\_name是要载入的类名，类名必须包含路径信息，也就是下划线分隔的路径信息和类名。
+
+在载入的过程中, 首先会判断这个类名是否是本地类, 如果是本地类, 则使用本地类类库目录, 否则使用全局类目录. 然后判断yaf.lowcase\_path是否开启, 如果开启, 则会把类名中的路径部分全部小写. 然后加载并执行。
+
+\begin{lstlisting}[language=bash]
+/** yaf.lowcase_path=0 */
+Foo_Bar_Dummy表示这个类存在于类库目录下的Foo/Bar/Dummy.php
+
+/** yaf.lowcase_path=1 */
+Foo_Bar_Dummy表示这个类存在于类库目录下的foo/bar/Dummy.php
+\end{lstlisting}
+
+
+注意，在php.ini中的yaf.lowcase\_path开启的情况下, 路径信息中的目录部分都会被转换成小写。
+
+在php.ini中的yaf.use\_spl\_autoload关闭的情况下, 即使类没有找到, Yaf\_Loader::autoload也会返回TRUE, 剥夺其后面的自动加载函数的执行权利。
+
+\begin{lstlisting}[language=PHP]
+<?php
+Yaf_Loader::autoload("Baidu_ST_Dummy_Bar");
 \end{lstlisting}
 
 \subsection{Yaf\_Loader::clearLocalNamespace()}
 
-清除本地命名空间
+
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Loader::clearLocalNamespace ( void )
 \end{lstlisting}
 
 
+清除本地命名空间（或清除已注册的本地类前缀）
 
-
+\begin{lstlisting}[language=PHP]
+<?php
+Yaf_Loader::getInstance()->clearLocalNamespace();
+\end{lstlisting}
 
 \subsection{Yaf\_Loader::\_\_clone()}
 
@@ -4448,10 +5989,25 @@ private void Yaf_Loader::__clone ( void )
 private Yaf_Loader::__construct ( void )
 \end{lstlisting}
 
-\subsection{Yaf\_Loader::getInstance()}
+\subsection{Yaf\_Loader::getInstance([\$local\_library\_path [,\$global\_library\_path]])}
+
+获取当前的Yaf\_Loader实例
 
 \begin{lstlisting}[language=PHP]
-public static void Yaf_Loader::getInstance ( void )
+public static Yaf_Loader Yaf_Loader::getInstance ( $local_library_path,$global_library_path)
+\end{lstlisting}
+
+
+\begin{compactitem}
+\item \$local\_library\_path - 本地(自身)类库目录, 如果留空, 则返回已经实例化过的Yaf\_Loader实例，
+\item \$global\_library\_path - 全局类库目录, 如果留空则会认为和\$local\_library\_directory相同。
+\end{compactitem}
+
+Yaf\_Loader是单例模式，所以即使第二次以不同的参数实例化一个Yaf\_Loader，得到的仍然是已经实例化的第一个实例。
+
+\begin{lstlisting}[language=PHP]
+<?php
+$loader = Yaf_Loader::getInstance();
 \end{lstlisting}
 
 
@@ -4468,35 +6024,78 @@ public Yaf_Loader Yaf_Loader::getLibraryPath ([ bool $is_global = false ] )
 public void Yaf_Loader::getLocalNamespace ( void )
 \end{lstlisting}
 
-
-\subsection{Yaf\_Loader::import()}
+获取当前已经注册的本地类前缀
 
 \begin{lstlisting}[language=PHP]
-public static void Yaf_Loader::import ( void )
+<?php
+Yaf_Loader::getInstance()->registerLocalNamespace(array("Foo", "Bar"));
+print(Yaf_Loader::getInstance()->getLocalNamespace());
+//输出:
+// :Foo:Bar:
 \end{lstlisting}
 
 
-\subsection{Yaf\_Loader::isLocalName()}
+\subsection{Yaf\_Loader::import(string \$file)}
+
 
 \begin{lstlisting}[language=PHP]
-public void Yaf_Loader::isLocalName ( void )
+public static void Yaf_Loader::import (\$file)
 \end{lstlisting}
 
+导入一个PHP文件, 因为Yaf\_Loader::import只是专注于一次包含, 所以要比传统的require\_once性能好一些。
 
-\subsection{Yaf\_Loader::registerLocalNamespace()}
+要载入的文件路径\$file可以为绝对路径和相对路径，如果为相对路径则会以应用的本地类目录(application.library)为基目录。
 
-注册本地类前缀并返回结果
+
+\begin{lstlisting}[language=PHP]
+<?php
+//绝对路径
+Yaf_Loader::import("/usr/local/foo.php);
+
+//相对路径, 会在APPLICATION_PATH."/library"下加载
+Yaf_loader::import("plugins/User.php");
+\end{lstlisting}
+
+\subsection{Yaf\_Loader::isLocalName(\$class\_name)}
+
+
+判断一个类是否是本地类
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Loader::isLocalName ($class_name)
+\end{lstlisting}
+
+\$class\_name是字符串表示类名, 本方法会根据下划线分隔截取出类名的第一部分, 然后在Yaf\_Loader的\_local\_ns中判断是否存在, 从而确定结果。
+
+\begin{lstlisting}[language=PHP]
+<?php
+Yaf_Loader::getInstance()->registrLocalNamespace("Foo");
+
+Yaf_Loader::getInstance()->isLocalName("Foo_Bar");//TRUE
+Yaf_Loader::getInstance()->isLocalName("FooBar");//FALSE
+\end{lstlisting}
+
+\subsection{Yaf\_Loader::registerLocalNamespace(mixed \$name\_prefix)}
+
+注册本地类前缀并返回结果。
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Loader::registerLocalNamespace ([ mixed $prefix ] )
 \end{lstlisting}
 
+对于以这些前缀开头的本地类，都从本地类库路径中加载。
+
 \begin{compactitem}
-\item \$prefix - 字符串或者是数组格式的类名前缀。
+\item \$prefix - 字符串或者是数组格式的类名前缀，不包含前缀后面的下划线
 
 所有拥有和这些前缀相同前缀的类将被加载到本地library路径。
-
 \end{compactitem}
+
+\begin{lstlisting}[language=PHP]
+<?php
+Yaf_Loader::getInstance()->registerLocalNamespace("Foo");
+Yaf_Loader::getInstance()->registerLocalNamespace(array("Foo", "Bar"));
+\end{lstlisting}
 
 
 \subsection{Yaf\_Loader::setLibararyPath()}
@@ -4519,6 +6118,10 @@ private void Yaf_Loader::__sleep ( void )
 \begin{lstlisting}[language=PHP]
 private void Yaf_Loader::__wakeup ( void )
 \end{lstlisting}
+
+
+
+
 
 \chapter{Yaf\_Plugin\_Abstract}
 
@@ -4592,6 +6195,7 @@ $app->bootstrap()->run();
 // string(20) "dispatchLoopShutdown"
 \end{lstlisting}
 
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -4606,6 +6210,9 @@ Yaf_Plugin_Abstract {
     public void routerStartup ( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response )
 }
 \end{lstlisting}
+
+
+
 
 \section{Method}
 
@@ -4737,7 +6344,11 @@ Yaf\_Registry（对象注册表(或称对象仓库)）是一个用于在整个�
 
 Registry机制相当于一种全局存储，开发者可以通过Yaf\_Registry类的静态方法来使用对象注册表。
 
-另外，Yaf\_Registry类是一个数组对象，可以使用数组形式来访问其中的类方法。
+另外，Yaf\_Registry类本身是一个数组对象，可以使用数组形式来访问其中的类方法。
+
+
+\section{Synopsis}
+
 
 \begin{lstlisting}[language=PHP]
 Yaf_Registry {
@@ -4753,6 +6364,8 @@ Yaf_Registry {
     public static bool set ( string $name , string $value )
 }
 \end{lstlisting}
+
+在打开yaf.use\_namespace的情况下，也可以使用Yaf\textbackslash Registry。
 
 \section{Property}
 
@@ -4796,7 +6409,13 @@ public static void Yaf_Registry::del ( string $name )
 \item \$name
 \end{compactitem}
 
+\begin{lstlisting}[language=PHP]
+<?php
+/** 存入 */
+Yaf_Registry::set('config', Yaf_Application::app()->delConfig());
 
+Yaf_Registry::del("config");
+\end{lstlisting}
 
 \subsection{Yaf\_Registry::get()}
 
@@ -4810,6 +6429,17 @@ public static mixed Yaf_Registry::get ( string $name )
 \begin{compactitem}
 \item \$name
 \end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/** 存入 */
+Yaf_Registry::set('config', Yaf_Application::app()->getConfig());
+
+/* 之后可以在任何地方获取到 */
+$config->Yaf_Registry::get("config");
+\end{lstlisting}
 
 \subsection{Yaf\_Registry::has()}
 
@@ -4825,6 +6455,14 @@ public static bool Yaf_Registry::has ( string $name )
 \item \$name
 \end{compactitem}
 
+\begin{lstlisting}[language=PHP]
+<?php
+/** 存入 */
+Yaf_Registry::set('config', Yaf_Application::app()->hasConfig());
+
+assert(Yaf_Registry::has("config"));
+\end{lstlisting}
+
 \subsection{Yaf\_Registry::set()}
 
 
@@ -4839,8 +6477,24 @@ public static bool Yaf_Registry::set ( string $name , string $value )
 \item \$value
 \end{compactitem}
 
+\begin{lstlisting}[language=PHP]
+<?php
+/** 存入 */
+Yaf_Registry::set('config', Yaf_Application::app()->getConfig());
+
+/* 之后可以在任何地方获取到 */
+$config->Yaf_Registry::get("config");
+\end{lstlisting}
+
 \chapter{Yaf\_Request\_Abstract}
 
+Yaf\_Request\_Abstract代表了一个实际请求，一般不需要自己实例化它，Yaf\_Application在run以后会自动根据当前请求实例它。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Request\_Abstract。
+
+
+
+\section{Synopsis}
 
 
 
@@ -4940,18 +6594,46 @@ Strict Standards: you are running ap in debug mode
 
 \subsection{\$module}
 
+在路由完成后, 请求被分配到的模块名
+
 \subsection{\$controller}
+
+在路由完成后, 请求被分配到的控制器名
+
 \subsection{\$action}
+
+在路由完成后, 请求被分配到的动作名
+
 \subsection{\$method}
+
+当前请求的Method, 对于命令行来说, Method为\texttt{"CLI"}
+
 \subsection{\$params}
+
+当前请求的附加参数
+
 \subsection{\$language}
+
+当前请求的希望接受的语言, 对于Http请求来说, 这个值来自分析请求头Accept-Language. 对于不能鉴别的情况, 这个值为NULL.
+
 \subsection{\$\_exception}
 \subsection{\$\_base\_uri}
+
+当前请求Request URI要忽略的前缀, 一般不需要手工设置, Yaf会自己分析。
+
+只有当Yaf分析出错的时候, 可以通过application.baseUri来手工设置.
+
 \subsection{\$uri}
+
+当前请求的Request URI
+
 \subsection{\$dispatched}
+
+表示当前请求是否已经完成分发
+
 \subsection{\$routed}
 
-
+表示当前请求是否已经完成路由
 
 \section{Constant}
 
@@ -4967,7 +6649,7 @@ Strict Standards: you are running ap in debug mode
 
 
 
-
+获取当前请求被路由到的动作(Action)名.
 
 
 
@@ -4976,6 +6658,17 @@ Strict Standards: you are running ap in debug mode
 public void Yaf_Request_Abstract::getActionName ( void )
 \end{lstlisting}
 
+路由成功以后, 返回当前被分发处理此次请求的动作名. 路由之前, 返回NULL
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class ErrorController extends Yaf_Controller_Abstract {
+    public funciton errorAction() {
+        echo "current Action:" . $this->getRequest()->getActionName();
+    }
+}
+\end{lstlisting}
 
 
 \subsection{Yaf\_Request\_Abstract::getBaseUri()}
@@ -4992,13 +6685,23 @@ public void Yaf_Request_Abstract::getBaseUri ( void )
 
 \subsection{Yaf\_Request\_Abstract::getControllerName()}
 
+获取当前请求被路由到的控制器名.
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Request_Abstract::getControllerName ( void )
+\end{lstlisting}
+
+路由成功以后, 返回当前被分发处理此次请求的控制器名. 路由之前, 返回NULL
 
 
 \begin{lstlisting}[language=PHP]
-public void Yaf_Request_Abstract::getControllerName ( void )
+<?php
+class ErrorController extends Yaf_Controller_Abstract {
+    public funciton errorAction() {
+        echo "current Controller:" . $this->getRequest()->getControllerName();
+    }
+}
 \end{lstlisting}
-
-
 
 \subsection{Yaf\_Request\_Abstract::getEnv()}
 
@@ -5017,12 +6720,22 @@ public void Yaf_Request_Abstract::getEnv ( string $name [, string $default ] )
 \subsection{Yaf\_Request\_Abstract::getException()}
 
 
-
+Yaf\_Request\_Abstract::getException()方法主要用于在异常捕获模式下, 在异常发生的情况时流程进入Error控制器的error动作时, 获取当前发生的异常对象。
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::getException ( void )
 \end{lstlisting}
 
+在有异常的情况下, 返回当前异常对象. 没有异常的情况下, 返回NULL
+
+\begin{lstlisting}[language=PHP]
+<?php
+class ErrorController extends Yaf_Controller_Abstract {
+    public funciton errorAction() {
+        $exception = $this->getRequest()->getException();
+    }
+}
+\end{lstlisting}
 
 
 \subsection{Yaf\_Request\_Abstract::getLanguage()}
@@ -5037,51 +6750,110 @@ public void Yaf_Request_Abstract::getLanguage ( void )
 
 \subsection{Yaf\_Request\_Abstract::getMethod()}
 
-
-
-
-
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::getMethod ( void )
 \end{lstlisting}
 
+获取当前请求的类型, 可能的返回值为GET,POST,HEAD,PUT,CLI等.
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        if ($this->getRequest()->getMethod() == "CLI") {
+            echo "running in cli mode";
+        }
+    }
+}
+\end{lstlisting}
 
 
 \subsection{Yaf\_Request\_Abstract::getModuleName()}
 
 
-
+获取当前请求被路由到的模块名
 
 \begin{lstlisting}[language=PHP]
-public void Yaf_Request_Abstract::getModuleName ( void )
+public string Yaf_Request_Abstract::getModuleName ( void )
 \end{lstlisting}
 
+
+路由成功以后, 返回当前被分发处理此次请求的模块名. 路由之前, 返回NULL
+
+\begin{lstlisting}[language=PHP]
+<?php
+class ErrorController extends Yaf_Controller_Abstract {
+    public funciton errorAction() {
+        echo "current Module:" . $this->getRequest()->getModuleName();
+    }
+}
+\end{lstlisting}
 
 
 
 \subsection{Yaf\_Request\_Abstract::getParam()}
 
+获取当前请求中的路由参数, 路由参数不是指\$\_GET或者\$\_POST, 而是在路由过程中, 路由协议根据Request Uri分析出的请求参数。
 
+例如，对于默认的路由协议Yaf\_Route\_Static, 路由如下请求URL:\url{http://www.domain.com/module/controller/action/name1/value1/name2/value2/}路由结束后将会得到俩个路由参数, name1和name2, 值分别是value1, value2。
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::getParam ( string $name [, string $default ] )
 \end{lstlisting}
 
+路由参数和\$\_GET,\$\_POST一样, 是来自用户的输入, 不是可信的. 使用前需要做安全过滤.
+
+
 \begin{compactitem}
-\item \$name
-\item \$default
+\item \$name - 要获取的路由参数名
+\item \$default - 如果设定此参数, 如果没有找到\$name路由参数, 则返回此参数值.
 \end{compactitem}
+
+如果getParam()方法找到对应的值就返回对应的路由参数值, 如果没有找到, 而又设置了\$default\_value, 则返回default\_value, 否则返回NULL。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        echo "user id:" . $this->getRequest()->getParam("userid", 0);
+    }
+}
+\end{lstlisting}
+
+
+
+和getParam()不同，getParams()返回当前所有的路由参数。
+
 
 
 
 \subsection{Yaf\_Request\_Abstract::getParams()}
 
+获取当前请求中的所有路由参数。
 
+需要注意的是，路由参数不是指\$\_GET或者\$\_POST, 而是在路由过程中, 路由协议根据Request Uri分析出的请求参数。
+
+例如，对于默认的路由协议Yaf\_Route\_Static, 路由如下请求URL\url{http://www.domain.com/module/controller/action/name1/value1/name2/value2/}路由结束后将会得到俩个路由参数, name1和name2, 值分别是value1, value2.
 
 
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::getParams ( void )
 \end{lstlisting}
+
+路由参数和\$\_GET,\$\_POST一样, 是来自用户的输入, 不是可信的. 使用前需要做安全过滤。
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        $this->getRequest()->getParams();
+    }
+}
+\end{lstlisting}
+
 
 
 
@@ -5111,13 +6883,23 @@ public void Yaf_Request_Abstract::getServer ( string $name [, string $default ] 
 
 \subsection{Yaf\_Request\_Abstract::isCli()}
 
-
-
-
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::isCli ( void )
 \end{lstlisting}
 
+获取当前请求是否为CLI请求，如果是CLI请求返回TRUE, 不是返回FALSE。
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        if ($this->getRequest()->isCli()) {
+            echo "running in Cli mode";
+        }
+    }
+}
+\end{lstlisting}
 
 
 \subsection{Yaf\_Request\_Abstract::isDispatched()}
@@ -5132,13 +6914,24 @@ public void Yaf_Request_Abstract::isDispatched ( void )
 
 \subsection{Yaf\_Request\_Abstract::isGet()}
 
-
-
-
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::isGet ( void )
 \end{lstlisting}
 
+获取当前请求是否为GET请求，如果是GET请求返回TRUE, 不是返回FALSE。
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        if ($this->getRequest()->isGet()) {
+            echo "running in Get mode";
+        }
+    }
+}
+\end{lstlisting}
 
 
 
@@ -5244,17 +7037,28 @@ public void Yaf_Request_Abstract::setModuleName ( string $module )
 
 \subsection{Yaf\_Request\_Abstract::setParam()}
 
+为当前的请求设置路由参数。
+
 \begin{lstlisting}[language=PHP]
 public void Yaf_Request_Abstract::setParam ( string $name [, string $value ] )
 \end{lstlisting}
 
 
 \begin{compactitem}
-\item \$name
-\item \$value
+\item \$name - 路由参数名
+\item \$value - 路由参数值
 \end{compactitem}
 
+成功返回Yaf\_Request\_Abstract实例自身, 失败返回FALSE。
 
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton indexAction() {
+        $this->getRequest()->setParam("userid", 0);
+    }
+}
+\end{lstlisting}
 
 \subsection{Yaf\_Request\_Abstract::setRequestUri()}
 
@@ -5281,6 +7085,11 @@ public void Yaf_Request_Abstract::setRouted ([ string $flag ] )
 
 \chapter{Yaf\_Request\_Http}
 
+Yaf\_Request\_Http代表了一个实际的HTTP请求，一般不需要自己实例化它，Yaf\_Application在run()以后会自动根据当前请求来实例化它。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Request\_Http。
+
+\section{Synopsis}
 
 
 \begin{lstlisting}[language=PHP]
@@ -5452,8 +7261,13 @@ public bool Yaf_Request_Http::isXmlHttpRequest ( void )
 \chapter{Yaf\_Request\_Simple}
 
 
-Yaf\_Request\_Simple 特别的被用于测试，例如CLI模式下模拟一些特殊的要求。
+Yaf\_Request\_Simple代表了一个实际的HTTP请求，一般不需要自己实例化它，Yaf\_Application在run()以后会自动根据当前请求来实例化它。
 
+特别地，Yaf\_Request\_Simple可以被用于测试环境，例如CLI模式下模拟一些特殊的要求。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Request\_Simple。
+
+\section{Synopsis}
 
 \begin{lstlisting}[language=PHP]
 Yaf_Request_Simple extends Yaf_Request_Abstract {
@@ -5601,6 +7415,11 @@ public void Yaf_Request_Simple::isXmlHttpRequest ( void )
 
 \chapter{Yaf\_Response\_Abstract}
 
+响应对象和请求对象相对应, Yaf\_Response\_Abstract是发送给请求端的响应的载体。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Response\_Abstract。
+
+\section{Synopsis}
 
 
 
@@ -5635,7 +7454,12 @@ Yaf_Response_Abstract {
 
 
 \subsection{\$\_header}
+
+响应给请求的Header, 目前是保留属性
+
 \subsection{\$\_body}
+
+响应给请求的Body内容
 \subsection{\$\_sendheader}
 
 \section{Method}
@@ -5816,9 +7640,9 @@ protected void Yaf_Response_Abstract::setAllHeaders ( void )
 \end{lstlisting}
 
 
-\subsection{Yaf\_Request\_Abstruct::setBody()}
+\subsection{Yaf\_Response\_Abstract::setBody()}
 
-设置响应的Body
+设置响应的Body，\$name参数是保留参数（如果没有特殊效果, 留空即可）
 
 
 
@@ -5826,10 +7650,23 @@ protected void Yaf_Response_Abstract::setAllHeaders ( void )
 public bool Yaf_Response_Abstract::setBody ( string $content [, string $key ] )
 \end{lstlisting}
 
+成功返回Yaf\_Response\_Abstract, 失败返回FALSE。
+
+\begin{lstlisting}[language=PHP]
+<?php
+class IndexController extends Yaf_Controller_Abstract {
+    public funciton init() {
+        $this->getResponse()->setBody("Hello World");
+    }
+}
+\end{lstlisting}
+
 \begin{compactitem}
-\item \$body - content string
+\item \$body - 要响应的字符串, 一般是一段HTML, 或者是一段JSON(返回给Ajax请求)
 \item \$key - body所对应的key，可以设置一个body的键值对，如果没有指定key，系统默认使用Yaf\_Response\_Abstract::DEFAULT\_BODY
 \end{compactitem}
+
+或者，也可以通过指定不同的key, 给一个response对象设置很多响应字符串, 可以在所有的请求结束后做layout, 如果不做特殊处理就转交给Yaf去发送响应的话, 所有设置的响应字符串, 按照被设置的先后顺序被输出给客户端。
 
 
 \begin{lstlisting}[language=PHP]
@@ -5900,10 +7737,137 @@ private void Yaf_Response_Abstract::__toString ( void )
 \end{lstlisting}
 
 
+\chapter{Yaf\_Response\_Http}
+
+Yaf\_Response\_Http是在Yaf作为Web应用的时候默认响应载体
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Response_Http extends Yaf_Response_Abstract {
+    /* Constants */
+    const string DEFAULT_BODY = "content" ;
+    /* 属性 */
+    protected $_header ;
+    protected $_body ;
+    protected $_sendheader ;
+    protected $_response_code;
+    /* 方法 */
+    public void setHeader ( $name,$value,[$rep[,$response_code]] )
+    public void setAllHeaders ( $headers )
+    public void getHeader ( [$name] )
+    public void clearHeaders ( void )
+    public void setRedirect ( $url )
+    /* 继承的方法 */
+    public void Yaf_Response_Abstract response ( void )
+    public Yaf_Response_Abstract __construct ( void )
+    public void Yaf_Response_Abstract __destruct ( void )
+    public void Yaf_Response_Abstract __toString ( void )
+    public bool Yaf_Response_Abstract setBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract appendBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract prependBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract clearBody ([ string $name ] )
+    public mixed Yaf_Response_Abstract getBody ([ string $name ] )
+}
+\end{lstlisting}
+
+\section{Property}
+
+\subsection{\$\_header}
+
+
+\subsection{\$\_body}
+
+
+\subsection{\$\_sendheader}
+
+
+\subsection{\$\_response\_code}
+
+响应给请求端的HTTP状态码
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Response\_Http::setHeader(\$name,\$value,[\$rep[,\$response\_code]])}
+\subsection{Yaf\_Response\_Http::setAllHeaders(\$headers )}
+\subsection{Yaf\_Response\_Http::getHeader([\$name])}
+\subsection{Yaf\_Response\_Http::clearHeaders(void)}
+\subsection{Yaf\_Response\_Http::setRedirect(\$url)}
+
+\subsection{Yaf\_Response\_Http::response(void)}
+\subsection{Yaf\_Response\_Http::\_\_construct(void)}
+\subsection{Yaf\_Response\_Http::\_\_destruct(void)}
+\subsection{Yaf\_Response\_Http::\_\_toString(void)}
+\subsection{Yaf\_Response\_Http::setBody(string \$body[,string \$name])}
+\subsection{Yaf\_Response\_Http::appendBody(string \$body[,string \$name])}
+\subsection{Yaf\_Response\_Http::prependBody(string \$body[,string \$name])}
+\subsection{Yaf\_Response\_Http::clearBody([string \$name])}
+\subsection{Yaf\_Response\_Http::getBody([string \$name])}
+
+\chapter{Yaf\_Response\_Cli}
+
+Yaf\_Response\_Cli是在Yaf作为命令行应用的时候默认响应载体。
+
+\section{Synopsis}
+
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Response_Cli extends Yaf_Response_Abstract {
+    /* Constants */
+    const string DEFAULT_BODY = "content" ;
+    /* 属性 */
+    protected $_header ;
+    protected $_body ;
+    protected $_sendheader ;
+    /* 继承的方法 */
+    public Yaf_Response_Abstract __construct ( void )
+    public void Yaf_Response_Abstract __destruct ( void )
+    public void Yaf_Response_Abstract __toString ( void )
+    public bool Yaf_Response_Abstract setBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract appendBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract prependBody ( string $body [, string $name ] )
+    public bool Yaf_Response_Abstract clearBody ([ string $name ] )
+    public mixed Yaf_Response_Abstract getBody ([ string $name ] )
+    public void Yaf_Response_Abstract response ( void )
+}
+\end{lstlisting}
+
+
+\section{Property}
+
+\subsection{\$\_header}
+
+
+\subsection{\$\_body}
+
+
+\subsection{\$\_sendheader}
+
+
+\section{Method}
+
+\subsection{Yaf\_Response\_Cli::\_\_construct(void)}
+\subsection{Yaf\_Response\_Cli::\_\_destruct(void)}
+\subsection{Yaf\_Response\_Cli::\_\_toString(void)}
+\subsection{Yaf\_Response\_Cli::setBody(string \$body[,string \$name])}
+\subsection{Yaf\_Response\_Cli::appendBody(string \$body[, string \$name])}
+\subsection{Yaf\_Response\_Cli::prependBody(string \$body[, string \$name])}
+\subsection{Yaf\_Response\_Cli::clearBody([string \$name])}
+\subsection{Yaf\_Response\_Cli::getBody([string \$name])}
+\subsection{Yaf\_Response\_Cli::response(void)}
+
+
+
+
 \chapter{Yaf\_Route\_Interface}
 
 Yaf\_Route\_Interface是Yaf路由协议的标准接口, 它的存在使得用户可以自定义路由协议。
 
+\section{Synopsis}
 
 
 
@@ -5965,6 +7929,7 @@ Yaf\_Route\_Interface::route() 是用户自定义路由唯一需要实现的方�
 
 \chapter{Yaf\_Route\_Map}
 
+\section{Synopsis}
 
 \begin{lstlisting}[language=PHP]
 Yaf_Route_Map implements Yaf_Route_Interface {
@@ -6055,56 +8020,1949 @@ public Yaf_Route_Map::__construct ([ string $controller_prefer = false [, string
 
 
 
+
+
+
+
+\begin{example}
+添加路由映射示例
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a map route to Yaf_Router route stack
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",new Yaf_Route_Map());
+\end{lstlisting}
+\end{example}
+
+以上示例的输出类似于：
+
+
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/product/foo/bar
+ * route will result in following values:
+ */
+array(
+  "controller" => "product_foo_bar",
+)
+\end{lstlisting}
+
+
+\begin{example}
+通过调用addRoute()添加路由映射
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a map route to Yaf_Router route stack
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",new Yaf_Route_Map(true, "_"));
+\end{lstlisting}
+\end{example}
+
+以上例程的输出类似于：
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/user/list/_/foo/22
+ * route will result in following values:
+ */
+array(
+    "action" => "user_list",
+)
+
+/**
+ * and request parameters:
+ */
+array(
+  "foo"   => 22,
+)
+\end{lstlisting}
+
+\begin{example}
+通过调用addConfig()来添加路由映射
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a map route to Yaf_Router route stack by calling addconfig
+ */
+$config = array(
+    "name" => array(
+        "type"  => "map",         //Yaf_Route_Map route
+        "controllerPrefer" => FALSE,
+        "delimiter"        => "#!",
+    ),
+);
+Yaf_Dispatcher::getInstance()->getRouter()->addConfig(new Yaf_Config_Simple($config));
+\end{lstlisting}
+\end{example}
+
 \subsection{Yaf\_Route\_Map::route()}
 
+执行路由
 
 \begin{lstlisting}[language=PHP]
+public bool Yaf_Route_Map::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
 
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+\chapter{Yaf\_Route\_Regex}
+
+Yaf\_Route\_Regex是Yaf内置的路由中最灵活的。
+
+
+\begin{lstlisting}[language=PHP]
+class Yaf_Route_Regex extends Yaf_Route_Interface implements Yaf_Route_Interface {
+    /* 属性 */
+    protected $_route;
+    protected $_default;
+    protected $_maps;
+    protected $_verify;
+    /* 方法 */
+    public string assemble(array $info [, array $query]);
+    public __construct(string $match, array $route [, array $map [, array $verify]]);
+    public bool route(Yaf_Request_Abstract $request);
+    /* 继承的方法 */
+    abstract public string Yaf_Route_Interface::assemble(array $info [, array $query]);
+    abstract public bool Yaf_Route_Interface::route(Yaf_Request_Abstract $request);
+}
+\end{lstlisting}
+
+\section{Property}
+
+
+\subsection{\$\_route}
+
+
+\subsection{\$\_default}
+
+
+\subsection{\$\_maps}
+
+
+\subsection{\$\_verify}
+
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Regex::assemble()}
+
+组合url
+
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Route_Regex::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+根据指定参数和自定义参数将regex这个route组合成一个url。
+
+在regex route使用assemble需要在初始化时指定reverse参数，否则将不能正常工作。
+
+\begin{compactitem}
+\item \$info - 需要传入一个数组，数组的key可以为:a、:c、:m，:a表示action，:c表示controller，:m表示module。
+
+
+\item \$query - 用户自定义的query string，将根据此路由规则拼接在url中
+\end{compactitem}
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$router = new Yaf_Router();
+$route = new Yaf_Route_Regex(
+    "#^/product/([^/]+)/([^/])+#",
+    array(
+        'controller' => "product",  //route to product controller,
+    ),
+    array(),
+    array(),
+    '/:m/:c/:a'
+);
+$router->addRoute("regex", $route);
+var_dump($router->getRoute('regex')->assemble(
+    array(
+        ':m' => 'module',
+        ':c' => 'controller',
+        ':a' => 'action'
+    ),
+    array(
+        'tkey1' => 'tval1',
+        'tkey2' =>
+            'tval2'
+    )
+));
+\end{lstlisting}
+
+以上例程的输出类似于：
+
+\begin{lstlisting}[language=PHP]
+string(49) "/module/controller/action?tkey1=tval1&tkey2=tval2"
+\end{lstlisting}
+
+
+\subsection{Yaf\_Route\_Regex::\_\_construct()}
+
+
+\begin{lstlisting}[language=PHP]
+publicYaf_Route_Regex::__construct ( string $match , array $route [, array $map [, array $verify ]] )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$match - 一个完整的正则表达式，用来匹配一个请求的uri，如果不能匹配，Yaf\_Route\_Regex 将返回FALSE。
+
+\item \$route - 当路由正则匹配成功请求uri时，Yaf\_Route\_Regex将会用它来决定哪一个m/c/a被路由。
+
+在这个数组中无论是m/c/a都是最优的，如果没有提供一个明确的值，它将会以默认方式被路由。 另外也可以使用map的结果作为m/c/a的结果.
+
+\item \$map - 将匹配到的结果捕捉放到一个已经命名好的数组中。
+
+\item \$verify
+
+\end{compactitem}
+
+\begin{example}
+添加正则路由
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a regex route to Yaf_Router route stack
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",
+    new Yaf_Route_Regex(
+        "#^/product/([^/]+)/([^/])+#", //match request uri leading "/product"
+        array(
+            'controller' => "product",  //route to product controller,
+        ),
+        array(
+            1 => "name",   // now you can call $request->getParam("name")
+            2 => "id",     // to get the first captrue in the match pattern.
+        )
+    )
+);
+\end{lstlisting}
+\end{example}
+
+
+\begin{example}
+使用动态的controller
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ *  使用动态的controller
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",
+    new Yaf_Route_Regex(
+        "#^/product/([^/]+)/([^/])+#", //match request uri leading "/product"
+        array(
+            'controller' => ":name",  //使用上面匹配的:name, 也就是$1作为controller
+        ),
+        array(
+            1 => "name",   // now you can call $request->getParam("name")
+            2 => "id",     // to get the first captrue in the match pattern.
+        )
+    )
+);
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+使用addConfig()添加正则路由
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a regex route to Yaf_Router route stack by calling addconfig
+ */
+$config = array(
+    "name" => array(
+        "type"  => "regex",          //Yaf_Route_Regex route
+        "match" => "#(.*)#",         //match arbitrary request uri
+        "route" => array(
+            'controller' => "product",  //route to product controller,
+            'action'     => "dummy",    //route to dummy action
+        ),
+        "map" => array(
+            1 => "uri",   // now you can call $request->getParam("uri")
+        ),
+    ),
+);
+Yaf_Dispatcher::getInstance()->getRouter()->addConfig(
+    new Yaf_Config_Simple($config));
+\end{lstlisting}
+\end{example}
+
+\subsection{Yaf\_Route\_Regex::route()}
+
+路由一个传进来的请求。
+
+
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Route_Regex::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+如果正则表达式是Yaf\_Route\_Regex::\_\_construct()的第一个参数，并且匹配了请求uri，返回TRUE，否则返回FALSE。
+
+
+\chapter{Yaf\_Route\_Rewrite}
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Rewrite extends Yaf_Route_Interface implements Yaf_Route_Interface {
+    /* 属性 */
+    protected $_route ;
+    protected $_default ;
+    protected $_verify ;
+    /* 方法 */
+    public string assemble ( array $info [, array $query ] )
+    public __construct ( string $match , array $route [, array $verify ] )
+    public bool route ( Yaf_Request_Abstract $request )
+    /* 继承的方法 */
+    abstract public string Yaf_Route_Interface::assemble ( array $info [, array $query ] )
+    abstract public bool Yaf_Route_Interface::route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+
+\section{Property}
+
+
+\subsection{\$\_route}
+
+
+\subsection{\$\_default}
+
+
+\subsection{\$\_verify}
+
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Rewrite::assemble()}
+
+组合url
+
+
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Route_Rewrite::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+根据指定参数和自定义参数将rewrite这个route组合成一个url
+
+\begin{compactitem}
+\item \$info - 需要传入一个数组，数组中每个key必须和初始化rewrite route时\$match参数中的带冒号的参数名一致
+
+
+\item \$query - 用户自定义的query string，将根据此路由规则拼接在url中
+
+\end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$router = new Yaf_Router();
+$route = new Yaf_Route_Rewrite(
+    "/product/:name/:id/*",
+    array(
+        'controller' => "product",
+    ),
+    array()
+);
+$router->addRoute("rewrite", $route);
+
+var_dump($router->getRoute('rewrite')->assemble(
+    array(
+        ':name' => 'foo',
+        ':id' => 'bar',
+        ':tmpkey1' => 'tmpval1'
+    ),
+    array(
+        'tkey1' => 'tval1',
+        'tkey2' => 'tval2'
+    )
+));
+\end{lstlisting}
+
+以上例程的输出类似于：
+
+\begin{lstlisting}[language=PHP]
+string(57) "/product/foo/bar/tmpkey1/tmpval1/?tkey1=tval1&tkey2=tval2"
+\end{lstlisting}
+
+
+\subsection{Yaf\_Route\_Rewrite::\_\_construct()}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Route_Rewrite::__construct ( string $match , array $route [, array $verify ] )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$match - 一个类似正则表达式，会被用来匹配一个请求的uri，如果匹配失败，Yaf\_Route\_Rewrite 会返回FALSE。
+
+\item \$route - 当路由正则匹配成功请求uri时，Yaf\_Route\_Rewrite 将会用它来决定哪一个m/c/a被路由。
+
+在这个数组中无论是m/c/a都是最优的，如果你没有提供一个明确的值，它将会以默认方式被路由。
+
+\item \$verify
+\end{compactitem}
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a rewrite route to Yaf_Router route stack
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",
+    new Yaf_Route_rewrite(
+        "/product/:name/:id/*", //match request uri leading "/product"
+        array(
+            'controller' => "product",  //route to product controller,
+        )
+    )
+);
+\end{lstlisting}
+
+以上例程的输出类似于：
+
+
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/product/foo/22/foo/bar
+ * route will result in following values:
+ */
+array(
+  "controller" => "product",
+  "module"     => "index", //(default)
+  "action"     => "index", //(default)
+)
+
+/**
+ * and request parameters:
+ */
+array(
+  "name" => "foo",
+  "id"   => 22,
+  "foo"  => bar
+)
+\end{lstlisting}
+
+
+\begin{example}
+通过addConfig()添加Rewrite路由
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a rewrite route to Yaf_Router route stack by calling addconfig
+ */
+$config = array(
+    "name" => array(
+        "type" => "rewrite",        //Yaf_Route_Rewrite route
+        "match" => "/user-list/:id", //match only /user/list/?/
+        "route" => array(
+            'controller' => "user",  //route to user controller,
+            'action' => "list",  //route to list action
+        ),
+    ),
+);
+Yaf_Dispatcher::getInstance()->getRouter()->addConfig(
+    new Yaf_Config_Simple($config));
+\end{lstlisting}
+\end{example}
+
+以上例程的输出类似于：
+
+
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/user-list/22
+ * route will result in following values:
+ */
+array(
+  "controller" => "user",
+  "action"     => "list",
+  "module"     => "index", //(default)
+)
+
+/**
+ * and request parameters:
+ */
+array(
+  "id"   => 22,
+)
+\end{lstlisting}
+
+
+\begin{example}
+使用动态结果作为action名
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 使用动态结果作为action名
+ */
+$config = array(
+    "name" => array(
+        "type" => "rewrite",        //Yaf_Route_Rewrite route
+        "match" => "/user-list/:a/:id", //match only /user-list/开头的
+        "route" => array(
+            'controller' => "user",  //route to user controller,
+            'action' => ":a",  //使用动态的action
+        ),
+    ),
+);
+Yaf_Dispatcher::getInstance()->getRouter()->addConfig(
+    new Yaf_Config_Simple($config));
+\end{lstlisting}
+\end{example}
+
+以上例程的输出类似于：
+
+
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/user-list/list/22
+ * route will result in following values:
+ */
+array(
+  "controller" => "user",
+  "action"     => "list",
+  "module"     => "index", //(default)
+)
+
+/**
+ * and request parameters:
+ */
+array(
+  "id"   => 22,
+)
 \end{lstlisting}
 
 
 
 
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
+\subsection{Yaf\_Route\_Rewrite::route()}
 
 
 
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
 
 
 
 
 \begin{lstlisting}[language=PHP]
-
+public bool Yaf_Route_Rewrite::route ( Yaf_Request_Abstract $request )
 \end{lstlisting}
+
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+\chapter{Yaf\_Router}
+
+Yaf\_Router是标准的框架路由。
+
+
+\section{Synopsis}
+
+\begin{lstlisting}[language=PHP]
+Yaf_Router {
+   /* 属性 */
+   protected $_routes ;
+   protected $_current ;
+   /* 方法 */
+   public void addConfig ( Yaf_Config_Abstract $config )
+   public Yaf_Router addRoute ( string $name , Yaf_Route_Abstract $route )
+   public __construct ( void )
+   public string getCurrentRoute ( void )
+   public void getRoute ( string $name )
+   public void getRoutes ( void )
+   public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+路由是一个拿到URI端点（URL中的URI的一部分）然后分解参数得到哪一个module, controller, 和action需要接受请求。
+
+module, controller, 和action，还有一些其他的参数是打包在一个Yaf\_Request\_Abstract的对象中，然后通过Yaf\_Dispatcher来处理的。
+
+路由只发生一次——最初接到请求并且在第一个controller分发之前。
+
+Yaf\_Router被设计来允许使用纯PHP结构的类似功能模块的跳转，其本身非常松散的基于Ruby on Rails的路由，并且不需要开发者了解Web服务器处理URL跳转的相关知识。
+
+Yaf\_Router可以处理一个Apache 跳转（mod\_rewrite）模块的规则。
+
+
+\begin{example}
+Apache的跳转规则
+\begin{lstlisting}[language=PHP]
+RewriteEngine on
+RewriteRule !\.(js|ico|gif|jpg|png|css|html)$ index.php
+\end{lstlisting}
+\end{example}
+
+
+
+\begin{example}
+预定义的Apache的跳转规则
+\begin{lstlisting}[language=PHP]
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -s [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+RewriteRule ^.*$ index.php [NC,L]
+\end{lstlisting}
+\end{example}
+
+\begin{example}
+Lighttpd的跳转规则
+\begin{lstlisting}[language=PHP]
+url.rewrite-once = (
+  ".*\?(.*)$" => "/index.php?$1",
+  ".*\.(js|ico|gif|jpg|png|css|html)$" => "$0",
+  "" => "/index.php"
+)
+\end{lstlisting}
+\end{example}
+
+
+\begin{example}
+Nginx的跳转规则
+\begin{lstlisting}[language=PHP]
+server {
+  listen ****;
+  server_name  yourdomain.com;
+  root   document_root;
+  index  index.php index.html;
+
+  if (!-e $request_filename) {
+    rewrite ^/(.*)  /index.php/$1 last;
+  }
+}
+\end{lstlisting}
+\end{example}
+
+
+Yaf\_Router预设了一个默认路由，它将以controller/action的形式匹配URIs。
+
+此外，一个module的名字可以被指定为第一路径元素，允许URIs设置为module/controller/action的形式。
+
+最后，Yaf\_Router也会匹配一些URI中额外附加的参数，默认形式是controller/action/var1/value1/var2/value2。
+
+\begin{example}
+Yaf\_Route\_Static
+\begin{lstlisting}[language=PHP]
+// Assuming the following configure:
+$conf = array(
+   "application" => array(
+      "modules" => "Index,Blog",
+   ),
+);
+
+Controller only:
+http://example/news
+    controller == news
+Action only(when defined yaf.action_prefer=1 in php.ini)
+    action  == news
+ 
+Invalid module maps to controller name:
+http://example/foo
+    controller == foo
+ 
+Module + controller:
+http://example/blog/archive
+    module     == blog
+    controller == archive
+ 
+Module + controller + action:
+http://example/blog/archive/list
+    module     == blog
+    controller == archive
+    action     == list
+ 
+Module + controller + action + params:
+http://example/blog/archive/list/sort/alpha/date/desc
+    module     == blog
+    controller == archive
+    action     == list
+    sort       == alpha
+    date       == desc
+\end{lstlisting}
+\end{example}
+
+
+\section{Property}
+
+
+\subsection{\$\_route}
+
+
+\subsection{\$\_current}
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Router::addConfig()}
+
+
+向Router中添加配置文件中定义的路由
+
+
+
+
 
 
 
 \begin{lstlisting}[language=PHP]
-
+public void Yaf_Router::addConfig ( Yaf_Config_Abstract $config )
 \end{lstlisting}
+
+将application.ini中定义的路由规则添加到Yaf\_Router的路由栈中
+
+下面是一个在application.ini中定义的路由规则示例：
+
+
+\begin{lstlisting}[language=PHP]
+;the order is very important, the prior one will be called first
+
+;a rewrite route match request /product/*/*
+routes.route_name.type="rewrite"
+routes.route_name.match="/product/:name/:value"
+routes.route_name.route.controller=product
+routes.route_name.route.action=info
+
+;a regex route match request /list/*/*
+routes.route_name1.type="regex"
+routes.route_name1.match="#^list/([^/]*)/([^/]*)#"
+routes.route_name1.route.controller=Index
+routes.route_name1.route.action=action
+routes.route_name1.map.1=name
+routes.route_name1.map.2=value
+
+;a simple route match /**?c=controller&a=action&m=module
+routes.route_name2.type="simple"
+routes.route_name2.controller=c
+routes.route_name2.module=m
+routes.route_name2.action=a
+
+;a simple router match /**?r=PATH_INFO
+routes.route_name3.type="supervar"
+routes.route_name3.varname=r
+
+;a map route match any request to controller
+routes.route_name4.type="map"
+routes.route_name4.controllerPrefer=TRUE
+routes.route_namer.delimiter="#!"
+\end{lstlisting}
+
+\begin{example}
+使用Yaf\_Dispatcher::autoConfig()加载路由规则
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set("config", $config);
+    }
+
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = $dispatcher->getRouter();
+        /**
+         * we can add some pre-defined routes in application.ini
+         */
+        $router->addConfig(Yaf_Registry::get("config")->routes);
+    }
+}
+\end{lstlisting}
+\end{example}
+
+
+
+
+\subsection{Yaf\_Router::addRoute()}
+
+往Router中添加新的路由
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Router Yaf_Router::addRoute ( string $name , Yaf_Route_Abstract $route )
+\end{lstlisting}
+
+
+默认地，Yaf\_Router使用Yaf\_Route\_Static作为它的默认的路由，可以通过调用这个方法往Router的堆栈中添加一个新的路由。
+
+在路由栈中，新的路由规则会比老的规则先调用，如果新路由规则返回TRUE，那么路由进程将会结束。否则，老的规则将会被调用。
+
+\begin{example}
+Yaf\_Dispatcher::autoRender()示例
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set("config", $config);
+    }
+
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = $dispatcher->getRouter();
+        /**
+         * we can add some pre-defined routes in application.ini
+         */
+        $router->addConfig(Yaf_Registry::get("config")->routes);
+        /**
+         * add a Rewrite route, then for a request uri:
+         * http://domain/product/list/22/foo
+         * will be matched by this route, and result:
+         *
+         *  [module] =>
+         *  [controller] => product
+         *  [action] => info
+         *  [method] => GET
+         *  [params:protected] => Array
+         *      (
+         *          [id] => 22
+         *          [name] => foo
+         *      )
+         */
+        $route = new Yaf_Route_Rewrite(
+            "/product/list/:id/:name",
+            array(
+                "controller" => "product",
+                "action" => "info",
+            )
+        );
+
+        $router->addRoute('dummy', $route);
+    }
+}
+\end{lstlisting}
+\end{example}
+
+
+
+
+
+
+
+\subsection{Yaf\_Router::\_\_construct()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Router::__construct ( void )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Router::getCurrentRoute()}
+
+取得当前有效的路由的名字
+
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Router::getCurrentRoute ( void )
+\end{lstlisting}
+
+获取当前路由进程中正在起作用的路由名，开发者需要在路由进程结束之后调用此方法，在这之前，这个方法会一直返回NULL。
+
+\begin{example}
+注册路由到Bootstrap
+\begin{lstlisting}[language=PHP]
+<?php
+class Bootstrap extends Yaf_Bootstrap_Abstract {
+    public function _initConfig() {
+        $config = Yaf_Application::app()->getConfig();
+        Yaf_Registry::set("config", $config);
+    }
+
+    public function _initRoute(Yaf_Dispatcher $dispatcher) {
+        $router = $dispatcher->getRouter();
+        $rewrite_route = new Yaf_Route_Rewrite(
+            "/product/list/:page",
+            array(
+                "controller" => "product",
+                "action" => "list",
+            )
+        );
+
+        $regex_route = new Yaf_Route_Rewrite(
+            "#^/product/info/(\d+)",
+            array(
+                "controller" => "product",
+                "action" => "info",
+            )
+        );
+        $router->addRoute('rewrite', $rewrite_route)->addRoute('regex', $regex_route);
+    }
+
+    /**
+     * register plugin
+     */
+    public function __initPlugins(Yaf_Dispatcher $dispatcher) {
+        $dispatcher->registerPlugin(new DummyPlugin());
+    }
+}
+\end{lstlisting}
+\end{example}
+
+
+\begin{example}
+application.directory/plugins/Dummy.php
+\begin{lstlisting}[language=PHP]
+<?php
+class DummyPlugin extends Yaf_Plugin_Abstract {
+
+    public function routerShutdown(Yaf_Request_Abstract $request, Yaf_Response_Abstract $response) {
+        var_dump(Yaf_Dispatcher::getInstance()->getRouter()->getCurrentRoute());
+    }
+}
+\end{lstlisting}
+\end{example}
+
+
+以上例程的输出类似于：
+
+\begin{lstlisting}[language=PHP]
+/* for http://yourdomain.com/product/list/1
+ * DummyPlugin will output:
+ */
+string(7) "rewrite"
+
+/* for http://yourdomain.com/product/info/34
+ * DummyPlugin will output:
+ */
+string(5) "regex"
+
+/* for other request URI
+ * DummyPlugin will output:
+ */
+string(8) "_default"
+\end{lstlisting}
+
+\subsection{Yaf\_Router::getRoute()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Router::getRoute ( string $name )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Router::getRoutes()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Router::getRoutes ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Router::route()}
+
+
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Router::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+
+\chapter{Yaf\_Route\_Simple}
+
+
+Yaf\_Route\_Simple 会匹配请求中的query string，然后找到路由信息。
+
+开发者需要做的只是告诉 Yaf\_Route\_Simple，在\$\_GET中哪个是Module，哪个是Controller，哪个是Action。
+
+
+\section{Synopsis}
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Simple implements Yaf_Route_Interface {
+    /* 属性 */
+    protected $controller ;
+    protected $module ;
+    protected $action ;
+    /* 方法 */
+    public string assemble ( array $info [, array $query ] )
+    public__construct ( string $module_name , string $controller_name , string $action_name )
+    public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+
+另外，Yaf\_Route\_Simple::route() 总是会返回TRUE，所以把Yaf\_Route\_Simple放在路由堆栈前面是很重要的，否则其他所有的路由都可能不会被调用到。
+
+
+\section{Property}
+
+\subsection{\$controller}
+
+
+\subsection{\$module}
+
+
+\subsection{\$action}
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Simple::assemble()}
+
+组合url
+
 
 
 
 
 \begin{lstlisting}[language=PHP]
-
+public string Yaf_Route_Simple::assemble ( array $info [, array $query ] )
 \end{lstlisting}
+
+根据指定参数和自定义参数将simple这个route组合成一个url
+
+\begin{compactitem}
+\item \$info - 需要传入一个数组，数组中每个key可为:m、:c、:a，:m代表module，:c代表controller, :a代表action
+
+\item \$query - 用户自定义的query string，将根据此路由规则拼接在url中
+
+\end{compactitem}
 
 
 
 \begin{lstlisting}[language=PHP]
-
+<?php
+$router = new Yaf_Router();
+$route  = new Yaf_Route_Simple('m', 'c', 'a');
+$router->addRoute("simple", $route);
+var_dump($router->getRoute('simple')->assemble(
+    array(
+        ':a' => 'yafaction',
+        'tkey' => 'tval',
+        ':c' => 'yafcontroller',
+        ':m' => 'yafmodule'
+    ),
+    array(
+        'tkey1' => 'tval1',
+        'tkey2' => 'tval2'
+    )
+));
+// 以上例程的输出类似于：
+string(64) "?m=yafmodule&c=yafcontroller&a=yafaction&tkey1=tval1&tkey2=tval2"
 \end{lstlisting}
+
+\subsection{Yaf\_Route\_Simple::\_\_construct()}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Route_Simple::__construct ( string $module_name , string $controller_name , string $action_name )
+\end{lstlisting}
+
+Yaf\_Route\_Simple将从query string中获得路由信息。这个构造函数的参数会被作为键到\$\_GET中去寻找路由信息。
+
+\begin{compactitem}
+\item \$module\_name - module信息的键名
+\item \$controller\_name - controller信息的键名
+\item \$action\_name - action信息的键名
+\end{compactitem}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$route = new Yaf_Route_Simple("m", "controller", "act");
+Yaf_Router::getInstance()->addRoute("simple", $route);
+\end{lstlisting}
+
+上述示例的输出可能如下：
+
+\begin{lstlisting}[language=PHP]
+Request: http://yourdomain.com/path/?controller=a&act=b
+=> module = default(index), controller = a, action = b
+
+Request: http://yourdomain.com/path
+=> module = default(index), controller = default(index), action = default(index)
+\end{lstlisting}
+
+\subsection{Yaf\_Route\_Simple::route()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Route_Simple::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+\chapter{Yaf\_Route\_Static}
+
+默认的，Yaf\_Router 只有一个Yaf\_Route\_Static 作为它默认的路由。
+
+Yaf\_Route\_Static 旨在处理80\%的要求，而且实例化 Yaf\_Route\_Static 是没有必要的，也没必要将它加入Yaf\_Router的路由堆栈。
+
+在Yaf\_Router的路由堆栈中总是存在Yaf\_Route\_Static的一个实例，并且总是在最后被调用。
+
+\section{Synopsis}
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Static implements Yaf_Router {
+    /* 方法 */
+    public string assemble ( array $info [, array $query ] )
+    public void match ( string $uri )
+    public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Static::assemble()}
+
+组合url
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Route_Static::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+根据指定参数和自定义参数将static这个route组合成一个url。
+
+\begin{compactitem}
+\item \$info - 需要传入一个数组，数组中每个key可为:m、:c、:a，:m代表module，:c代表controller, :a代表action
+
+\item \$query - 用户自定义的query string，将根据此路由规则拼接在url中
+
+\end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$router = new Yaf_Router();
+$route  = new Yaf_Route_Static();
+$router->addRoute("static", $route);
+var_dump($router->getRoute('static')->assemble(
+    array(
+        ':a' => 'yafaction',
+        'tkey' => 'tval',
+        ':c' => 'yafcontroller',
+        ':m' => 'yafmodule'
+    ))
+);
+
+var_dump($router->getRoute('static')->assemble(
+    array(
+        ':a' => 'yafaction',
+        'tkey' => 'tval',
+        ':c' => 'yafcontroller',
+        ':m' => 'yafmodule'
+    ),
+    array(
+        'tkey1' => 'tval1',
+        'tkey2' => 'tval2'
+    ))
+);
+// 以上例程的输出类似于：
+// string(%d) "/yafmodule/yafcontroller/yafaction"
+// string(%d) "/yafmodule/yafcontroller/yafaction?tkey1=tval1&tkey2=tval2"
+\end{lstlisting}
+
+\subsection{Yaf\_Route\_Static::match()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Route_Static::match ( string $uri )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$uri
+\end{compactitem}
+
+\subsection{Yaf\_Route\_Static::route()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Route_Static::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+// assuming there is only one module defined:Index
+Request: http://yourdomain.com/a/b
+=> module = index, controller=a, action=b
+
+//assuming ap.action_prefer = On
+Request: http://yourdomain.com/b
+=> module = default(index), controller = default(index), action = b
+
+//assuming ap.action_prefer = Off
+Request: http://yourdomain.com/b
+=> module = default(index), controller = b, action = default(index)
+
+
+Request: http://yourdomain.com/a/b/foo/bar/test/a/id/4
+=> module = default(index), controller = a, action = b, request parameters: foo = bar, test = a, id = 4
+\end{lstlisting}
+
+\chapter{Yaf\_Route\_Supervar}
+
+
+\section{Synopsis}
+
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Route_Supervar implements Yaf_Route_Interface {
+   /* 属性 */
+   protected $_var_name ;
+   /* 方法 */
+   public string assemble ( array $info [, array $query ] )
+   public __construct ( string $supervar_name )
+   public bool route ( Yaf_Request_Abstract $request )
+}
+\end{lstlisting}
+
+\section{Property}
+
+
+\subsection{\$\_var\_name}
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Route\_Supervar::assemble()}
+
+
+组合url
+
+
+\begin{lstlisting}[language=PHP]
+public string Yaf_Route_Supervar::assemble ( array $info [, array $query ] )
+\end{lstlisting}
+
+根据指定参数和自定义参数将supervar这个route组合成一个url
+
+\begin{compactitem}
+\item \$info - 需要传入一个数组，数组中每个key可为:m、:c、:a，:m代表module，:c代表controller, :a代表action
+
+\item \$query - 用户自定义的query string，将根据此路由规则拼接在url中
+
+\end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+$router = new Yaf_Router();
+$route  = new Yaf_Route_Supervar('r');
+$router->addRoute("supervar", $route);
+var_dump($router->getRoute('supervar')->assemble(
+    array(
+        ':a' => 'yafaction',
+        'tkey' => 'tval',
+        ':c' => 'yafcontroller',
+        ':m' => 'yafmodule'
+    ),
+    array(
+        'tkey1' => 'tval1',
+        'tkey2' => 'tval2'
+    )
+));
+
+try {
+    var_dump($router->getRoute('supervar')->assemble(
+        array(
+            ':a' => 'yafaction',
+            'tkey' => 'tval',
+            ':m' => 'yafmodule'
+        ),
+        array(
+            'tkey1' => 'tval1',
+            'tkey2' => 'tval2',
+            1 => array(),
+        )
+    ));
+} catch (Exception $e) {
+    var_dump($e->getMessage());
+}
+// 以上例程的输出类似于：
+// string(%d) "?r=/yafmodule/yafcontroller/yafaction&tkey1=tval1&tkey2=tval2"
+// string(%d) "You need to specify the controller by ':c'"
+\end{lstlisting}
+
+\subsection{Yaf\_Route\_Supervar::\_\_construct()}
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Route_Supervar::__construct ( string $supervar_name )
+\end{lstlisting}
+
+Yaf\_Route\_Supervar 类似于 Yaf\_Route\_Static，不同的是Yaf\_Route\_Supervar 在query string 中寻找路径信息，参数 supervar\_name 是键名。
+
+\begin{compactitem}
+\item \$supervar\_name - 键名
+\end{compactitem}
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * Add a supervar route to Yaf_Router route stack
+ */
+Yaf_Dispatcher::getInstance()->getRouter()->addRoute("name",
+    new Yaf_Route_Supervar("r"));
+\end{lstlisting}
+
+以上例程的输出类似于：
+
+\begin{lstlisting}[language=PHP]
+/** 
+ *for request: http://yourdomain.com/xx/oo/?r=/ctr/act/var/value
+ * will result in following:
+ */
+array (
+    "module"   => index(default),
+    "controller" => ctr,
+    "action"     => act,
+    "params"     => array(
+    "var" => value,
+  )
+)
+\end{lstlisting}
+
+
+\subsection{Yaf\_Route\_Supervar::route()}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public bool Yaf_Route_Supervar::route ( Yaf_Request_Abstract $request )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$request
+\end{compactitem}
+
+如果在\$\_GET中存在对应的键名（在Yaf\_Route\_Supervar::\_\_construct()中定义）就返回TRUE，否则返回FALSE。
+
+\chapter{Yaf\_Session}
+
+Yaf\_Session是Yaf对Session的包装，并实现了Iterator, ArrayAccess, Countable接口。
+
+在打开yaf.use\_namespace的情况下，可以使用Yaf\textbackslash Session。
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Session implements Iterator , Traversable , ArrayAccess , Countable {
+    /* 属性 */
+    protected static $_instance ;
+    protected $_session ;
+    protected $_started ;
+    /* 方法 */
+    private void __clone ( void )
+    private __construct ( void )
+    public void count ( void )
+    public void current ( void )
+    public void del ( string $name )
+    public void __get ( string $name )
+    public static void getInstance ( void )
+    public void has ( string $name )
+    public void __isset ( string $name )
+    public void key ( void )
+    public void next ( void )
+    public void offsetExists ( string $name )
+    public void offsetGet ( string $name )
+    public void offsetSet ( string $name , string $value )
+    public void offsetUnset ( string $name )
+    public void rewind ( void )
+    public void __set ( string $name , string $value )
+    private void __sleep ( void )
+    public void start ( void )
+    public void __unset ( string $name )
+    public void valid ( void )
+    private void __wakeup ( void )
+}
+\end{lstlisting}
+
+\section{Property}
+
+
+\subsection{\$\_instance}
+
+
+\subsection{\$\_session}
+
+
+\subsection{\$\_started}
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Session::\_\_clone()}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+private void Yaf_Session::__clone ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Session::\_\_construct()}
+
+
+
+\begin{lstlisting}[language=PHP]
+private Yaf_Session::__construct ( void )
+\end{lstlisting}
+
+
+
+\subsection{Yaf\_Session::count()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::count ( void )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Session::current()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::current ( void )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Session::del(string \$name)}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::del ( string $name )
+\end{lstlisting}
+
+
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+
+\subsection{Yaf\_Session::\_\_get()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::__get ( string $name )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+\subsection{Yaf\_Session::getInstance()}
+
+
+\begin{lstlisting}[language=PHP]
+public static void Yaf_Session::getInstance ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Session::has()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::has ( string $name )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+
+
+\subsection{Yaf\_Session::\_\_isset()}
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::__isset ( string $name )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+\subsection{Yaf\_Session::key()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::key ( void )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Session::next()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::next ( void )
+\end{lstlisting}
+
+
+
+\subsection{Yaf\_Session::offsetExists()}
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::offsetExists ( string $name )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+\subsection{Yaf\_Session::offsetGet()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::offsetGet ( string $name )
+\end{lstlisting}
+
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+\subsection{Yaf\_Session::offsetSet()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::offsetSet ( string $name , string $value )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\item \$value
+\end{compactitem}
+
+
+\subsection{Yaf\_Session::offsetUnset()}
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::offsetUnset ( string $name )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\end{compactitem}
+
+
+\subsection{Yaf\_Session::rewind()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::rewind ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Session::\_\_set()}
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::__set ( string $name , string $value )
+\end{lstlisting}
+
+\begin{compactitem}
+\item \$name
+\item \$value
+\end{compactitem}
+
+
+\subsection{Yaf\_Session::\_\_sleep()}
+
+
+
+\begin{lstlisting}[language=PHP]
+private void Yaf_Session::__sleep ( void )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Session::start()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::start ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Session::\_\_unset()}
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::__unset ( string $name )
+\end{lstlisting}
+
+
+\subsection{Yaf\_Session::valid()}
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Session::valid ( void )
+\end{lstlisting}
+
+\subsection{Yaf\_Session::\_\_wakeup()}
+
+
+
+\begin{lstlisting}[language=PHP]
+private void Yaf_Session::__wakeup ( void )
+\end{lstlisting}
+
 
 
 
 \chapter{Yaf\_Exception}
 
+Yaf实现了一套错误和异常捕获机制，主要是对常见的错误处理和异常捕获方法做了一个简单抽象，方便应用组织自己的错误统一处理逻辑。
+
+Yaf自身出错时候，根据配置可以分别采用抛出异常或者触发错误的方式来通知错误。
+
+在appliation.dispatcher.throwException(配置文件, 或者通过Yaf\_Dispatcher::throwException(true))打开的情况下，Yaf会抛异常，否则则会触发错误，那么对应的就有两套错误处理方式可供应用选用。
+
+在application.dispatcher.catchException(配置文件, 或者可通过Yaf\_Dispatcher::catchException(true))开启的情况下，当Yaf遇到未捕获异常的时候，就会把运行权限交给当前模块的Error Controller的Error Action动作，而异常可以作为请求的一个参数传递给Error Action。
+
+在Error Action中可以通过\texttt{\$request->getRequest()->getParam("exception")}获取当前发生的异常。
+
+另外，也可以通过\texttt{\$request->getException()}来获取当前发生的异常，而且如果Error Action定义了一个名为\texttt{\$exception}的参数的话，也可以直接通过这个参数获取当前发生的异常。
+
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会跳转到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 也可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction($exception) {
+        assert($exception === $exception->getCode());
+        $this->getView()->assign("code", $exception->getCode());
+        $this->getView()->assign("message", $exception->getMessage());
+    }
+}
+\end{lstlisting}
+
+通过最终的异常处理逻辑，Yaf应用就可以在出错的时候直接抛出异常，这样就可以在统一的异常处理逻辑中，根据各种不同的异常逻辑来处理错误和记录日志等。
+
+下面是一个常用的Error Action：
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会跳转到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 也可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction($exception) {
+        switch ($exception->getCode()) {
+            case YAF_ERR_LOADFAILD:
+            case YAF_ERR_LOADFAILD_MODULE:
+            case YAF_ERR_LOADFAILD_CONTROLLER:
+            case YAF_ERR_LOADFAILD_ACTION:
+                //404
+                header("Not Found");
+                break;
+
+            case CUSTOM_ERROR_CODE:
+                //自定义的异常
+                //...
+                break;
+        }
+    }
+}
+\end{lstlisting}
+
+下面是一个更为易读的方式：
+
+
+
+\begin{lstlisting}[language=PHP]
+<?php
+/**
+ * 当有未捕获的异常, 则控制流会流到这里
+ */
+class ErrorController extends Yaf_Controller_Abstract {
+    /**
+     * 此时可通过$request->getException()获取到发生的异常
+     */
+    public function errorAction() {
+        $exception = $this->getRequest()->getException();
+        try {
+            throw $exception;
+        } catch (Yaf_Exception_LoadFailed $e) {
+            //加载失败
+        } catch (Yaf_Exception $e) {
+            //其他错误
+        }
+    }
+}
+\end{lstlisting}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception extends Exception {
+    /* 属性 */
+    protected $message ;
+    protected $code ;
+    protected $previous ;
+    /* 方法 */
+    public __construct ( void )
+    public void getPrevious ( void )
+    /* 继承的方法 */
+    final public string Exception::getMessage ( void )
+    final public Exception Exception::getPrevious ( void )
+    final public int Exception::getCode ( void )
+    final public string Exception::getFile ( void )
+    final public int Exception::getLine ( void )
+    final public array Exception::getTrace ( void )
+    final public string Exception::getTraceAsString ( void )
+    public string Exception::__toString ( void )
+    final private void Exception::__clone ( void )
+}
+\end{lstlisting}
+
+\section{Property}
+
+
+\subsection{\$message}
+
+
+\subsection{\$code}
+
+
+\subsection{\$file}
+
+
+\subsection{\$line}
+
+
+\subsection{\$previous}
+
+
+
+\section{Method}
+
+
+\subsection{Yaf\_Exception::\_\_construct()}
+
+
+
+
+
+\begin{lstlisting}[language=PHP]
+public Yaf_Exception::__construct ( void )
+\end{lstlisting}
+
+
+
+\subsection{Yaf\_Exception::getPrevious()}
+
+
+\begin{lstlisting}[language=PHP]
+public void Yaf_Exception::getPrevious ( void )
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_TypeError}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_TypeError extends Yaf_Exception {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+
+\chapter{Yaf\_Exception\_StartupError}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_StartupError extends Yaf_Exception {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+
+\chapter{Yaf\_Exception\_DispatchFailed}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_DispatchFailed extends Yaf_Exception {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_RouterFailed}
+
+
+\section{Synopsis}
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_RouterFailed extends Yaf_Exception {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_LoadFailed}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_LoadFailed extends Yaf_Exception {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_LoadFailed\_Module}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_LoadFailed_Module extends Yaf_Exception_LoadFailed {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_LoadFailed\_Controller}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_LoadFailed_Controller extends Yaf_Exception_LoadFailed {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_LoadFailed\_Action}
+
+\section{Synopsis}
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_LoadFailed_Action extends Yaf_Exception_LoadFailed {
+     /* 属性 */
+     /* 方法 */
+     /* 继承的方法 */
+     public Yaf_Exception::__construct ( void )
+     public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\chapter{Yaf\_Exception\_LoadFailed\_View}
+
+
+\section{Synopsis}
+
+
+\begin{lstlisting}[language=PHP]
+Yaf_Exception_LoadFailed_View extends Yaf_Exception_LoadFailed {
+    /* 属性 */
+    /* 方法 */
+    /* 继承的方法 */
+    public Yaf_Exception::__construct ( void )
+    public void Yaf_Exception::getPrevious ( void )
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=PHP]
+
+\end{lstlisting}
+
+
 
 
 \begin{lstlisting}[language=PHP]
@@ -6112,69 +9970,8 @@ public Yaf_Route_Map::__construct ([ string $controller_prefer = false [, string
 \end{lstlisting}
 
 
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
 
 \begin{lstlisting}[language=PHP]
 
 \end{lstlisting}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-\begin{lstlisting}[language=PHP]
-
-\end{lstlisting}
-
-
-
 
